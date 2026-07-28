@@ -4,9 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Markdown } from "@/components/markdown";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import { commitChapterAction } from "@/lib/actions/chapters";
 import { joinTitleAndBody } from "@/lib/markdown-utils";
 
@@ -53,38 +51,17 @@ export function ChapterEditorForm({
           />
         </div>
 
-        <Tabs defaultValue="write">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="body">본문</Label>
-            <TabsList>
-              <TabsTrigger value="write">쓰기</TabsTrigger>
-              <TabsTrigger value="preview">미리보기</TabsTrigger>
-            </TabsList>
-          </div>
-          <TabsContent value="write">
-            <Textarea
-              id="body"
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              rows={24}
-              className="min-h-[32rem] resize-y text-base leading-8"
-            />
-            <p className="mt-1.5 text-right text-xs text-muted-foreground">
-              공백 제외 {charCount.toLocaleString()}자
-            </p>
-          </TabsContent>
-          <TabsContent value="preview">
-            <div className="min-h-[32rem] rounded-md border px-4 py-3">
-              {body.trim() ? (
-                <Markdown content={content} size="reading" />
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  본문을 입력하면 여기에 미리보기가 표시돼요.
-                </p>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
+        <div className="flex flex-col gap-2">
+          <Label>본문</Label>
+          <RichTextEditor
+            content={initialBody}
+            onChange={setBody}
+            placeholder="본문을 입력하세요… ⌘B 굵게, ⌘I 기울임"
+          />
+          <p className="text-right text-xs text-muted-foreground">
+            공백 제외 {charCount.toLocaleString()}자
+          </p>
+        </div>
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="message">무엇이 바뀌었나요?</Label>
