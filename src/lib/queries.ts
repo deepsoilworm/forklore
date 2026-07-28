@@ -4,6 +4,7 @@ import {
   collaborators,
   episodeComments,
   novels,
+  novelVisits,
   pollOptions,
   polls,
   pollVotes,
@@ -51,6 +52,52 @@ export async function isStarredByUser(novelId: string, userId: string | null) {
     .where(and(eq(stars.novelId, novelId), eq(stars.userId, userId)))
     .limit(1);
   return Boolean(row);
+}
+
+export async function recordNovelVisit(novelId: string, userId: string) {
+  await db
+    .insert(novelVisits)
+    .values({ novelId, userId })
+    .onConflictDoUpdate({
+      target: [novelVisits.novelId, novelVisits.userId],
+      set: { visitedAt: new Date() },
+    });
+}
+
+export type SidebarNovel = { id: string; name: string; owner: string; slug: string };
+
+export async function listRecentNovels(userId: string, limit = 5): Promise<SidebarNovel[]> {
+  const rows = await db
+    .select({ novel: novels, owner: users })
+    .from(novelVisits)
+    .innerJoin(novels, eq(novelVisits.novelId, novels.id))
+    .innerJoin(users, eq(novels.ownerId, users.id))
+    .where(eq(novelVisits.userId, userId))
+    .orderBy(desc(novelVisits.visitedAt))
+    .limit(limit);
+  return rows.map((r) => ({
+    id: r.novel.id,
+    name: r.novel.name,
+    owner: r.owner.username!,
+    slug: r.novel.slug,
+  }));
+}
+
+export async function listStarredNovels(userId: string, limit = 5): Promise<SidebarNovel[]> {
+  const rows = await db
+    .select({ novel: novels, owner: users })
+    .from(stars)
+    .innerJoin(novels, eq(stars.novelId, novels.id))
+    .innerJoin(users, eq(novels.ownerId, users.id))
+    .where(eq(stars.userId, userId))
+    .orderBy(desc(stars.createdAt))
+    .limit(limit);
+  return rows.map((r) => ({
+    id: r.novel.id,
+    name: r.novel.name,
+    owner: r.owner.username!,
+    slug: r.novel.slug,
+  }));
 }
 
 export async function listOtherNovelsByOwner(ownerId: string, excludeNovelId: string, limit = 6) {

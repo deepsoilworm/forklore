@@ -15,6 +15,8 @@ const MAIN_ITEMS = [
 ];
 
 type StoryNavData = { name: string; owner: string; slug: string; isOwner: boolean };
+type SidebarNovelData = { id: string; name: string; owner: string; slug: string };
+type SidebarLists = { recent: SidebarNovelData[]; starred: SidebarNovelData[] };
 
 function storyTabs(base: string, isOwner: boolean) {
   return [
@@ -32,6 +34,50 @@ function storyTabs(base: string, isOwner: boolean) {
 
 function isActive(pathname: string, href: string, exact: boolean) {
   return exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function SectionHeader({ label }: { label: string }) {
+  return (
+    <span className="truncate px-2.5 text-xs font-medium text-muted-foreground">{label}</span>
+  );
+}
+
+function EmptyHint({ children }: { children: React.ReactNode }) {
+  return <p className="px-2.5 text-xs text-muted-foreground/60">{children}</p>;
+}
+
+function NovelListSection({
+  label,
+  novels,
+  emptyHint,
+  onNavigate,
+}: {
+  label: string;
+  novels: SidebarNovelData[];
+  emptyHint: string;
+  onNavigate?: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <SectionHeader label={label} />
+      {novels.length === 0 ? (
+        <EmptyHint>{emptyHint}</EmptyHint>
+      ) : (
+        <nav className="flex flex-col gap-0.5">
+          {novels.map((novel) => (
+            <Link
+              key={novel.id}
+              href={`/n/${novel.owner}/${novel.slug}`}
+              onClick={onNavigate}
+              className="truncate rounded-md px-2.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+            >
+              {novel.name}
+            </Link>
+          ))}
+        </nav>
+      )}
+    </div>
+  );
 }
 
 function NavLink({
@@ -75,6 +121,7 @@ export function AppSidebar({
   // directly; `storyNav` below derives whether it's still relevant to the
   // current route, so leaving a story hides it without a setState-in-effect.
   const [fetchedStoryNav, setFetchedStoryNav] = useState<StoryNavData | null>(null);
+  const [lists, setLists] = useState<SidebarLists>({ recent: [], starred: [] });
 
   const storyMatch = pathname.match(/^\/n\/([^/]+)\/([^/]+)/);
   const storyNav =
@@ -97,6 +144,21 @@ export function AppSidebar({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storyMatch?.[1], storyMatch?.[2]]);
+
+  useEffect(() => {
+    if (!session?.username) return;
+    let cancelled = false;
+    fetch("/api/sidebar-lists")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data) setLists(data);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // Re-fetched on every route change so a just-visited or just-starred
+    // novel shows up without a full sidebar reload.
+  }, [session?.username, pathname]);
 
   const content = (
     <div className="flex h-full flex-col gap-6 overflow-y-auto px-3 py-4">
@@ -132,8 +194,12 @@ export function AppSidebar({
             onNavigate={() => setMobileOpen(false)}
           />
         ))}
-        {session?.username && (
-          <>
+      </nav>
+
+      {session?.username && (
+        <div className="flex flex-col gap-1">
+          <SectionHeader label="라이브러리" />
+          <nav className="flex flex-col gap-0.5">
             <NavLink
               href="/new"
               label="새 이야기"
@@ -146,12 +212,30 @@ export function AppSidebar({
               active={isActive(pathname, `/u/${session.username}`, false)}
               onNavigate={() => setMobileOpen(false)}
             />
-          </>
-        )}
-      </nav>
+          </nav>
+        </div>
+      )}
+
+      {session?.username && (
+        <NovelListSection
+          label="최근 항목"
+          novels={lists.recent}
+          emptyHint="아직 열람한 작품이 없어요"
+          onNavigate={() => setMobileOpen(false)}
+        />
+      )}
+
+      {session?.username && (
+        <NovelListSection
+          label="찜한 작품"
+          novels={lists.starred}
+          emptyHint="찜한 작품이 없어요"
+          onNavigate={() => setMobileOpen(false)}
+        />
+      )}
 
       {storyNav && (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 border-t pt-4">
           <span className="truncate px-2.5 text-xs font-medium text-muted-foreground">
             {storyNav.name}
           </span>

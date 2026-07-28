@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
-import { canRead, getNovelByOwnerSlug } from "@/lib/queries";
+import { canRead, getNovelByOwnerSlug, recordNovelVisit } from "@/lib/queries";
 import { ThinTopBar } from "@/components/thin-top-bar";
 
 export default async function NovelLayout({
@@ -16,6 +16,12 @@ export default async function NovelLayout({
 
   const session = await auth();
   if (!(await canRead(found.novel, session?.user?.id ?? null))) notFound();
+
+  if (session?.user?.id) {
+    // Fire-and-forget: recency for the sidebar's "최근 항목", not
+    // something the page needs to wait on.
+    void recordNovelVisit(found.novel.id, session.user.id);
+  }
 
   const base = `/n/${owner}/${slug}`;
   const tabs = [

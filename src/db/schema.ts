@@ -301,6 +301,26 @@ export const stars = pgTable(
   (t) => [primaryKey({ columns: [t.novelId, t.userId] })],
 );
 
+// One row per (user, novel) — upserted on every story-page visit so the
+// sidebar's "최근 항목" can show a recency-ordered list without a full
+// per-page-view log.
+export const novelVisits = pgTable(
+  "novel_visits",
+  {
+    novelId: uuid("novel_id")
+      .notNull()
+      .references(() => novels.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    visitedAt: timestamp("visited_at").notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.novelId, t.userId] }),
+    index("novel_visits_user_idx").on(t.userId, t.visitedAt),
+  ],
+);
+
 // Reader comments on a specific episode. Keyed by file path rather than a
 // git blob/commit sha, so comments stay attached to "chapter 3" across
 // edits — if the file is renamed they're orphaned, which is an acceptable

@@ -133,6 +133,13 @@ CREATE TABLE "issues" (
 	"closed_at" timestamp
 );
 --> statement-breakpoint
+CREATE TABLE "novel_visits" (
+	"novel_id" uuid NOT NULL,
+	"user_id" uuid NOT NULL,
+	"visited_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "novel_visits_novel_id_user_id_pk" PRIMARY KEY("novel_id","user_id")
+);
+--> statement-breakpoint
 CREATE TABLE "novels" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"slug" text NOT NULL,
@@ -275,6 +282,8 @@ ALTER TABLE "issue_comments" ADD CONSTRAINT "issue_comments_issue_id_issues_id_f
 ALTER TABLE "issue_comments" ADD CONSTRAINT "issue_comments_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "issues" ADD CONSTRAINT "issues_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "issues" ADD CONSTRAINT "issues_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "novel_visits" ADD CONSTRAINT "novel_visits_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "novel_visits" ADD CONSTRAINT "novel_visits_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "novels" ADD CONSTRAINT "novels_owner_id_users_id_fk" FOREIGN KEY ("owner_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "plot_lines" ADD CONSTRAINT "plot_lines_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "poll_options" ADD CONSTRAINT "poll_options_poll_id_polls_id_fk" FOREIGN KEY ("poll_id") REFERENCES "public"."polls"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -301,6 +310,7 @@ CREATE INDEX "encounters_plot_line_idx" ON "encounters" USING btree ("plot_line_
 CREATE INDEX "episode_comments_lookup_idx" ON "episode_comments" USING btree ("novel_id","episode_path");--> statement-breakpoint
 CREATE UNIQUE INDEX "issue_novel_number_idx" ON "issues" USING btree ("novel_id","number");--> statement-breakpoint
 CREATE INDEX "issue_novel_status_idx" ON "issues" USING btree ("novel_id","status");--> statement-breakpoint
+CREATE INDEX "novel_visits_user_idx" ON "novel_visits" USING btree ("user_id","visited_at");--> statement-breakpoint
 CREATE INDEX "novels_owner_idx" ON "novels" USING btree ("owner_id");--> statement-breakpoint
 CREATE INDEX "plot_lines_novel_idx" ON "plot_lines" USING btree ("novel_id","order");--> statement-breakpoint
 CREATE INDEX "poll_options_poll_idx" ON "poll_options" USING btree ("poll_id");--> statement-breakpoint
