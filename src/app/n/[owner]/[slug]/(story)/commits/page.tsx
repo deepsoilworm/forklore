@@ -23,7 +23,7 @@ export default async function CommitsPage({
   ]);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
       <BranchSwitcher branches={branches} current={branch} />
       <ul className="divide-y rounded-md border">
         {history.map((c) => (
