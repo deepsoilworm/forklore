@@ -83,6 +83,8 @@ CREATE TABLE "commits" (
 	"branch" text NOT NULL,
 	"author_id" uuid,
 	"message" text NOT NULL,
+	"char_count" integer,
+	"char_delta" integer,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "commits_novel_id_sha_pk" PRIMARY KEY("novel_id","sha")
 );
@@ -317,6 +319,7 @@ CREATE INDEX "character_developments_character_idx" ON "character_developments" 
 CREATE INDEX "character_fields_character_idx" ON "character_fields" USING btree ("character_id","order");--> statement-breakpoint
 CREATE INDEX "characters_novel_idx" ON "characters" USING btree ("novel_id");--> statement-breakpoint
 CREATE INDEX "commits_novel_branch_idx" ON "commits" USING btree ("novel_id","branch");--> statement-breakpoint
+CREATE INDEX "commits_author_idx" ON "commits" USING btree ("author_id","created_at");--> statement-breakpoint
 CREATE INDEX "encounter_participants_character_idx" ON "encounter_participants" USING btree ("character_id");--> statement-breakpoint
 CREATE INDEX "encounters_novel_idx" ON "encounters" USING btree ("novel_id","order");--> statement-breakpoint
 CREATE INDEX "encounters_plot_line_idx" ON "encounters" USING btree ("plot_line_id","order");--> statement-breakpoint

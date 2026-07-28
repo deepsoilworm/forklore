@@ -1,5 +1,5 @@
 {
-  "id": "bc8a0d72-f4d4-434f-9bfc-214be2eab37b",
+  "id": "f7f02937-c8e0-4fa1-9537-684988659a3a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -644,6 +644,18 @@
           "primaryKey": false,
           "notNull": true
         },
+        "char_count": {
+          "name": "char_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "char_delta": {
+          "name": "char_delta",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -664,6 +676,27 @@
             },
             {
               "expression": "branch",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "commits_author_idx": {
+          "name": "commits_author_idx",
+          "columns": [
+            {
+              "expression": "author_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

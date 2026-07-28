@@ -5,11 +5,13 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { canRead, listNovelsForUser } from "@/lib/queries";
+import { getDailyWritingStats } from "@/lib/stats-queries";
 import { CATEGORY_LABELS, LANGUAGE_LABELS } from "@/lib/labels";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { CoverThumbnail } from "@/components/cover-thumbnail";
+import { WritingStats } from "@/components/writing-stats";
 
 export default async function UserProfilePage({
   params,
@@ -21,7 +23,11 @@ export default async function UserProfilePage({
   if (!user) notFound();
 
   const session = await auth();
-  const allNovels = await listNovelsForUser(user.id);
+  const isOwner = session?.user?.id === user.id;
+  const [allNovels, daily] = await Promise.all([
+    listNovelsForUser(user.id),
+    isOwner ? getDailyWritingStats(user.id) : Promise.resolve([]),
+  ]);
   const visibility = await Promise.all(
     allNovels.map((row) => canRead(row.novel, session?.user?.id ?? null)),
   );
@@ -39,6 +45,12 @@ export default async function UserProfilePage({
           <p className="text-sm text-muted-foreground">@{username}</p>
         </div>
       </div>
+
+      {isOwner && (
+        <div className="mb-8">
+          <WritingStats daily={daily} />
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         {novels.map(({ novel }) => (

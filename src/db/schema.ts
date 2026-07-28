@@ -200,11 +200,18 @@ export const commits = pgTable(
       onDelete: "set null",
     }),
     message: text("message").notNull(),
+    // Populated only for commits made through the editor (not backfilled
+    // for history synced from git log) — whitespace-stripped char count
+    // of the file after this commit, and the change vs. its previous
+    // version. Powers the writing-stats view.
+    charCount: integer("char_count"),
+    charDelta: integer("char_delta"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [
     primaryKey({ columns: [t.novelId, t.sha] }),
     index("commits_novel_branch_idx").on(t.novelId, t.branch),
+    index("commits_author_idx").on(t.authorId, t.createdAt),
   ],
 );
 

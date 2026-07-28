@@ -52,6 +52,7 @@ export async function commitChapterAction(formData: FormData) {
       email:
         session.user.email ?? `${session.user.username}@users.forklore.dev`,
     },
+    authorUserId: session.user.id,
   });
 
   const file = parsed.filepath.startsWith("chapters/")

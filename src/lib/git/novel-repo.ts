@@ -88,6 +88,10 @@ export async function createNovel(opts: {
   return novel;
 }
 
+function strippedLength(content: string) {
+  return content.replace(/\s/g, "").length;
+}
+
 export async function commitChapter(opts: {
   novelId: string;
   branch: string;
@@ -95,10 +99,18 @@ export async function commitChapter(opts: {
   content: string;
   message: string;
   author: Author;
+  authorUserId?: string;
 }) {
   return withRepoLock(opts.novelId, async () => {
     const { dir } = await checkoutScratchDir(opts.novelId);
     try {
+      const previousContent = await gitOps.readFileAtRef(dir, {
+        ref: opts.branch,
+        filepath: opts.filepath,
+      });
+      const charCount = strippedLength(opts.content);
+      const charDelta = charCount - (previousContent ? strippedLength(previousContent) : 0);
+
       const sha = await gitOps.writeAndCommit(dir, {
         branch: opts.branch,
         files: [{ filepath: opts.filepath, content: opts.content }],
@@ -107,6 +119,12 @@ export async function commitChapter(opts: {
       });
       await persistScratchDir(opts.novelId, dir);
       await syncBranchCache(opts.novelId, dir, opts.branch);
+      if (opts.authorUserId) {
+        await db
+          .update(commits)
+          .set({ authorId: opts.authorUserId, charCount, charDelta })
+          .where(and(eq(commits.novelId, opts.novelId), eq(commits.sha, sha)));
+      }
       await db
         .update(novels)
         .set({ updatedAt: new Date() })
