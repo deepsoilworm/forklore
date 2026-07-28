@@ -1,7 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { canWrite, getNovelByOwnerSlug } from "@/lib/queries";
-import { getChapterContent } from "@/lib/git/novel-repo";
+import { getChapterContent, listEpisodes } from "@/lib/git/novel-repo";
+import { splitTitleAndBody } from "@/lib/markdown-utils";
 import { ChapterEditorForm } from "@/components/chapter-editor-form";
 
 export default async function EditChapterPage({
@@ -23,23 +24,32 @@ export default async function EditChapterPage({
   }
 
   const branch = branchParam || found.novel.defaultBranch;
-  const content = path
-    ? await getChapterContent({ novelId: found.novel.id, ref: branch, filepath: path })
-    : "";
+
+  let filepath = path;
+  let title = "";
+  let body = "";
+
+  if (path) {
+    const content = await getChapterContent({ novelId: found.novel.id, ref: branch, filepath: path });
+    const split = splitTitleAndBody(content ?? "");
+    title = split.title;
+    body = split.body;
+  } else {
+    // New chapter: auto-number the file so writers never see file paths.
+    const episodes = await listEpisodes({ novelId: found.novel.id, ref: branch });
+    const nextNumber = String(episodes.length + 1).padStart(2, "0");
+    filepath = `chapters/${nextNumber}.md`;
+  }
 
   return (
-    <div className="flex flex-col gap-4">
-      <h2 className="mx-auto w-full max-w-2xl text-lg font-medium">
-        {path ? `${path} 편집` : "새 챕터"} — 브랜치 {branch}
-      </h2>
-      <ChapterEditorForm
-        owner={owner}
-        slug={slug}
-        branch={branch}
-        path={path ?? null}
-        defaultFilepathPrefix="chapters/"
-        initialContent={content ?? ""}
-      />
-    </div>
+    <ChapterEditorForm
+      owner={owner}
+      slug={slug}
+      branch={branch}
+      path={filepath!}
+      isNew={!path}
+      initialTitle={title}
+      initialBody={body}
+    />
   );
 }

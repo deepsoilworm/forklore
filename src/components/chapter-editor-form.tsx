@@ -8,24 +8,29 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Markdown } from "@/components/markdown";
 import { commitChapterAction } from "@/lib/actions/chapters";
+import { joinTitleAndBody } from "@/lib/markdown-utils";
 
 export function ChapterEditorForm({
   owner,
   slug,
   branch,
   path,
-  defaultFilepathPrefix = "chapters/",
-  initialContent,
+  isNew,
+  initialTitle,
+  initialBody,
 }: {
   owner: string;
   slug: string;
   branch: string;
-  path: string | null;
-  defaultFilepathPrefix?: string;
-  initialContent: string;
+  path: string;
+  isNew: boolean;
+  initialTitle: string;
+  initialBody: string;
 }) {
-  const [content, setContent] = useState(initialContent);
-  const charCount = content.replace(/\s/g, "").length;
+  const [title, setTitle] = useState(initialTitle);
+  const [body, setBody] = useState(initialBody);
+  const content = joinTitleAndBody(title, body);
+  const charCount = body.replace(/\s/g, "").length;
 
   return (
     <div className="mx-auto w-full max-w-2xl">
@@ -33,21 +38,24 @@ export function ChapterEditorForm({
         <input type="hidden" name="owner" value={owner} />
         <input type="hidden" name="slug" value={slug} />
         <input type="hidden" name="branch" value={branch} />
+        <input type="hidden" name="filepath" value={path} />
+        <input type="hidden" name="content" value={content} />
+
         <div className="flex flex-col gap-2">
-          <Label htmlFor="filepath">파일 경로</Label>
+          <Label htmlFor="title">회차 제목</Label>
           <Input
-            id="filepath"
-            name="filepath"
-            defaultValue={path ?? defaultFilepathPrefix}
-            placeholder="chapters/01-prologue.md"
+            id="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             required
-            readOnly={Boolean(path)}
+            placeholder="프롤로그"
+            className="text-lg font-medium"
           />
         </div>
 
         <Tabs defaultValue="write">
           <div className="flex items-center justify-between">
-            <Label htmlFor="content">본문 (Markdown)</Label>
+            <Label htmlFor="body">본문</Label>
             <TabsList>
               <TabsTrigger value="write">쓰기</TabsTrigger>
               <TabsTrigger value="preview">미리보기</TabsTrigger>
@@ -55,9 +63,9 @@ export function ChapterEditorForm({
           </div>
           <TabsContent value="write">
             <Textarea
-              id="content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
+              id="body"
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
               rows={24}
               className="min-h-[32rem] resize-y text-base leading-8"
             />
@@ -67,7 +75,7 @@ export function ChapterEditorForm({
           </TabsContent>
           <TabsContent value="preview">
             <div className="min-h-[32rem] rounded-md border px-4 py-3">
-              {content.trim() ? (
+              {body.trim() ? (
                 <Markdown content={content} size="reading" />
               ) : (
                 <p className="text-sm text-muted-foreground">
@@ -78,21 +86,16 @@ export function ChapterEditorForm({
           </TabsContent>
         </Tabs>
 
-        {/* Tabs unmount inactive panels, so the textarea may not be in the DOM at
-            submit time — this hidden field is the single source of truth for content. */}
-        <input type="hidden" name="content" value={content} />
-
         <div className="flex flex-col gap-2">
-          <Label htmlFor="message">커밋 메시지</Label>
+          <Label htmlFor="message">무엇이 바뀌었나요?</Label>
           <Input
             id="message"
             name="message"
-            required
-            placeholder={path ? "1화 오탈자 수정" : "1화 추가"}
+            placeholder={isNew ? `${title || "새 회차"} 추가` : `${title || "회차"} 수정`}
           />
         </div>
         <Button type="submit" className="self-start">
-          커밋
+          저장
         </Button>
       </form>
     </div>

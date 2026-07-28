@@ -16,7 +16,7 @@ const schema = z.object({
     .min(1)
     .regex(/^[a-zA-Z0-9._\-/]+\.md$/, "파일명은 .md로 끝나야 해요"),
   content: z.string(),
-  message: z.string().min(1).max(200),
+  message: z.string().max(200).optional(),
 });
 
 export async function commitChapterAction(formData: FormData) {
@@ -29,7 +29,7 @@ export async function commitChapterAction(formData: FormData) {
     branch: formData.get("branch"),
     filepath: formData.get("filepath"),
     content: formData.get("content") ?? "",
-    message: formData.get("message"),
+    message: formData.get("message") || undefined,
   });
 
   const found = await getNovelByOwnerSlug(parsed.owner, parsed.slug);
@@ -38,12 +38,15 @@ export async function commitChapterAction(formData: FormData) {
     throw new Error("쓰기 권한이 없습니다");
   }
 
+  const title = parsed.content.match(/^#\s+(.+)$/m)?.[1]?.trim();
+  const message = parsed.message || (title ? `${title} 저장` : "회차 저장");
+
   await commitChapter({
     novelId: found.novel.id,
     branch: parsed.branch,
     filepath: parsed.filepath,
     content: parsed.content,
-    message: parsed.message,
+    message,
     author: {
       name: session.user.name ?? session.user.username ?? "anonymous",
       email:
@@ -51,8 +54,15 @@ export async function commitChapterAction(formData: FormData) {
     },
   });
 
+  const file = parsed.filepath.startsWith("chapters/")
+    ? parsed.filepath.slice("chapters/".length)
+    : null;
+  const branchQuery = `branch=${encodeURIComponent(parsed.branch)}`;
+
   revalidatePath(`/n/${parsed.owner}/${parsed.slug}`);
   redirect(
-    `/n/${parsed.owner}/${parsed.slug}?branch=${encodeURIComponent(parsed.branch)}`,
+    file
+      ? `/n/${parsed.owner}/${parsed.slug}/read/${encodeURIComponent(file)}?${branchQuery}`
+      : `/n/${parsed.owner}/${parsed.slug}/read?${branchQuery}`,
   );
 }
