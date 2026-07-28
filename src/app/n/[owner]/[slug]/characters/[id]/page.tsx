@@ -2,9 +2,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { canWrite, getNovelByOwnerSlug } from "@/lib/queries";
-import { getCharacter, listEncountersForCharacter } from "@/lib/character-queries";
+import {
+  getCharacter,
+  listCharacterDevelopments,
+  listEncountersForCharacter,
+} from "@/lib/character-queries";
+import { addCharacterDevelopmentAction } from "@/lib/actions/characters";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const FIELDS: { key: "age" | "appearance" | "personality" | "goal" | "relationships"; label: string }[] = [
   { key: "age", label: "나이" },
@@ -26,9 +33,10 @@ export default async function CharacterDetailPage({
   const character = await getCharacter(found.novel.id, id);
   if (!character) notFound();
 
-  const [session, encounters] = await Promise.all([
+  const [session, encounters, developments] = await Promise.all([
     auth(),
     listEncountersForCharacter(character.id),
+    listCharacterDevelopments(character.id),
   ]);
   const writable = session?.user?.id
     ? await canWrite(found.novel, session.user.id)
@@ -70,6 +78,61 @@ export default async function CharacterDetailPage({
           <p className="whitespace-pre-wrap border-t pt-4 text-sm leading-7">
             {character.description}
           </p>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-2 border-t pt-6">
+        <h2 className="px-1 text-sm font-medium text-muted-foreground">
+          변화 타임라인 — 위 필드는 현재/기준 상태, 아래는 이야기 진행에 따른 변화 기록
+        </h2>
+        {developments.length === 0 ? (
+          <p className="px-1 text-sm text-muted-foreground">
+            아직 기록된 변화가 없어요.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-1.5">
+            {developments.map((dev) => (
+              <li key={dev.id} className="flex gap-3 rounded-lg border px-3 py-2.5 text-sm">
+                <span className="shrink-0 font-medium text-muted-foreground">{dev.label}</span>
+                <span>{dev.note}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {writable && (
+          <details className="mt-1 rounded-lg border px-4 py-3">
+            <summary className="cursor-pointer text-sm font-medium text-muted-foreground">
+              변화 기록하기
+            </summary>
+            <form
+              action={addCharacterDevelopmentAction}
+              className="mt-3 flex flex-col gap-3"
+            >
+              <input type="hidden" name="owner" value={owner} />
+              <input type="hidden" name="slug" value={slug} />
+              <input type="hidden" name="characterId" value={character.id} />
+              <div className="flex gap-3">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="label">시점</Label>
+                  <Input id="label" name="label" required maxLength={50} placeholder="3화" className="w-24" />
+                </div>
+                <div className="flex flex-1 flex-col gap-2">
+                  <Label htmlFor="note">변화 내용</Label>
+                  <Input
+                    id="note"
+                    name="note"
+                    required
+                    maxLength={500}
+                    placeholder="여우 정체 발각, 성격 냉소적으로 변화"
+                  />
+                </div>
+              </div>
+              <Button type="submit" size="sm" className="self-start">
+                추가
+              </Button>
+            </form>
+          </details>
         )}
       </div>
 

@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { characters, encounterParticipants, encounters } from "@/db/schema";
+import { characterDevelopments, characters, encounterParticipants, encounters } from "@/db/schema";
 import { and, asc, eq, inArray } from "drizzle-orm";
 
 export async function listCharacters(novelId: string) {
@@ -17,6 +17,14 @@ export async function getCharacter(novelId: string, characterId: string) {
     .where(and(eq(characters.id, characterId), eq(characters.novelId, novelId)))
     .limit(1);
   return row ?? null;
+}
+
+export async function listCharacterDevelopments(characterId: string) {
+  return db
+    .select()
+    .from(characterDevelopments)
+    .where(eq(characterDevelopments.characterId, characterId))
+    .orderBy(asc(characterDevelopments.order), asc(characterDevelopments.createdAt));
 }
 
 export type EncounterWithParticipants = {

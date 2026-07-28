@@ -2,8 +2,9 @@
 
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { characters, encounterParticipants, encounters } from "@/db/schema";
+import { characterDevelopments, characters, encounterParticipants, encounters } from "@/db/schema";
 import { canWrite, getNovelByOwnerSlug } from "@/lib/queries";
+import { getCharacter } from "@/lib/character-queries";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -122,4 +123,45 @@ export async function createEncounterAction(formData: FormData) {
 
   revalidatePath(`/n/${parsed.owner}/${parsed.slug}/encounters`);
   redirect(`/n/${parsed.owner}/${parsed.slug}/encounters`);
+}
+
+const developmentSchema = z.object({
+  owner: z.string(),
+  slug: z.string(),
+  characterId: z.string().uuid(),
+  label: z.string().min(1).max(50),
+  note: z.string().min(1).max(500),
+  order: z.coerce.number().int().optional(),
+});
+
+export async function addCharacterDevelopmentAction(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("로그인이 필요합니다");
+
+  const parsed = developmentSchema.parse({
+    owner: formData.get("owner"),
+    slug: formData.get("slug"),
+    characterId: formData.get("characterId"),
+    label: formData.get("label"),
+    note: formData.get("note"),
+    order: formData.get("order") || undefined,
+  });
+
+  const found = await getNovelByOwnerSlug(parsed.owner, parsed.slug);
+  if (!found) throw new Error("이야기를 찾을 수 없습니다");
+  if (!(await canWrite(found.novel, session.user.id))) {
+    throw new Error("쓰기 권한이 없습니다");
+  }
+
+  const character = await getCharacter(found.novel.id, parsed.characterId);
+  if (!character) throw new Error("인물을 찾을 수 없습니다");
+
+  await db.insert(characterDevelopments).values({
+    characterId: character.id,
+    label: parsed.label,
+    note: parsed.note,
+    order: parsed.order ?? 0,
+  });
+
+  revalidatePath(`/n/${parsed.owner}/${parsed.slug}/characters/${character.id}`);
 }

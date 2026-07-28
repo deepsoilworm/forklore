@@ -294,6 +294,25 @@ export const encounterParticipants = pgTable(
   ],
 );
 
+// A lightweight timeline of how a character changes over the course of the
+// story — not a full versioned snapshot of every field, just a running log
+// like "3화 — 여우 정체 발각, 성격 냉소적으로 변화". The character row itself
+// stays the single current/reference sheet.
+export const characterDevelopments = pgTable(
+  "character_developments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    characterId: uuid("character_id")
+      .notNull()
+      .references(() => characters.id, { onDelete: "cascade" }),
+    label: text("label").notNull(),
+    note: text("note").notNull(),
+    order: integer("order").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("character_developments_character_idx").on(t.characterId, t.order)],
+);
+
 export const episodeComments = pgTable(
   "episode_comments",
   {
