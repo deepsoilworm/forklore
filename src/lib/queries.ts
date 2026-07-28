@@ -80,6 +80,15 @@ export async function listNovelsForUser(userId: string) {
     .orderBy(desc(novels.updatedAt));
 }
 
+export async function listCollaborators(novelId: string) {
+  return db
+    .select({ collaborator: collaborators, user: users })
+    .from(collaborators)
+    .innerJoin(users, eq(collaborators.userId, users.id))
+    .where(eq(collaborators.novelId, novelId))
+    .orderBy(asc(users.username));
+}
+
 export async function getCollaboratorRole(novelId: string, userId: string) {
   const [row] = await db
     .select()

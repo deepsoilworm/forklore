@@ -23,3 +23,10 @@ export const STATUS_LABELS: Record<string, string> = {
   completed: "완결",
   hiatus: "휴재",
 };
+
+export const ROLE_LABELS: Record<string, string> = {
+  owner: "작성자",
+  maintainer: "메인테이너",
+  writer: "작가",
+  reader: "읽기 전용",
+};
