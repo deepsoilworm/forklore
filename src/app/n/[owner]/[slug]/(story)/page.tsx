@@ -41,7 +41,7 @@ export default async function NovelOverviewPage({
   const base = `/n/${owner}/${slug}`;
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <BranchSwitcher branches={branches} current={branch} />

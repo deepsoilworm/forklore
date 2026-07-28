@@ -24,7 +24,7 @@ export default async function EditCharacterPage({
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="mx-auto w-full max-w-2xl text-lg font-medium">{character.name} 편집</h2>
+      <h2 className="mx-auto w-full max-w-4xl text-lg font-medium">{character.name} 편집</h2>
       <CharacterForm owner={owner} slug={slug} initial={character} />
     </div>
   );

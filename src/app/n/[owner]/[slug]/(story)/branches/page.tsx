@@ -23,7 +23,7 @@ export default async function BranchesPage({
   ]);
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <ul className="divide-y rounded-md border">
         {branches.map((b) => (
           <li key={b.name} className="flex items-center justify-between px-4 py-2.5 text-sm">

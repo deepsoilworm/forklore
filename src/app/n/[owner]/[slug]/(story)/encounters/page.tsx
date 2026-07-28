@@ -55,7 +55,7 @@ export default async function EncountersPage({
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between px-1">
           <h2 className="text-sm font-medium text-muted-foreground">타임라인</h2>
@@ -87,7 +87,7 @@ export default async function EncountersPage({
         )}
       </div>
 
-      <div className="mx-auto w-full max-w-2xl">
+      <div className="mx-auto w-full max-w-4xl">
         {writable &&
           (characterList.length < 1 ? (
             <p className="text-sm text-muted-foreground">

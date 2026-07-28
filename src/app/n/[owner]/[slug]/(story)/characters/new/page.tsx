@@ -20,7 +20,7 @@ export default async function NewCharacterPage({
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="mx-auto w-full max-w-2xl text-lg font-medium">새 인물</h2>
+      <h2 className="mx-auto w-full max-w-4xl text-lg font-medium">새 인물</h2>
       <CharacterForm owner={owner} slug={slug} />
     </div>
   );

@@ -41,7 +41,7 @@ export function CharacterForm({
   }
 
   return (
-    <form action={saveCharacterAction} className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+    <form action={saveCharacterAction} className="mx-auto flex w-full max-w-4xl flex-col gap-4">
       <input type="hidden" name="owner" value={owner} />
       <input type="hidden" name="slug" value={slug} />
       {initial && <input type="hidden" name="id" value={initial.id} />}

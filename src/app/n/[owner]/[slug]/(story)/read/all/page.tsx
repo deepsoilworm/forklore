@@ -28,7 +28,7 @@ export default async function ReadAllPage({
   const base = `/n/${owner}/${slug}`;
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href={`${base}/read?branch=${encodeURIComponent(branch)}`}

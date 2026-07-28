@@ -38,7 +38,7 @@ export default async function CollaboratorsPage({
   ]);
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
       {pendingRequests.length > 0 && (
         <div className="flex flex-col gap-2">
           <h2 className="px-1 text-sm font-medium text-muted-foreground">

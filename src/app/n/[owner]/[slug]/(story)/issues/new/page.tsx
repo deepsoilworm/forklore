@@ -23,7 +23,7 @@ export default async function NewIssuePage({
   }
 
   return (
-    <div className="mx-auto w-full max-w-lg">
+    <div className="mx-auto w-full max-w-4xl">
       <h2 className="mb-4 text-lg font-medium">새 이슈</h2>
       <form action={createIssueAction} className="flex flex-col gap-4">
         <input type="hidden" name="owner" value={owner} />

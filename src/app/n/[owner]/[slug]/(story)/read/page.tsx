@@ -57,7 +57,7 @@ export default async function ReadNovelPage({
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
       <div className="flex items-start gap-5">
         <CoverThumbnail name={found.novel.name} />
         <div className="flex flex-1 flex-col gap-2 pt-1">

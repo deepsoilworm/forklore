@@ -41,7 +41,7 @@ export default async function ReadEpisodePage({
   const branchQuery = `branch=${encodeURIComponent(branch)}`;
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-10">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href={`${base}/read?${branchQuery}`}

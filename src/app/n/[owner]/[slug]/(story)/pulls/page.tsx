@@ -23,7 +23,7 @@ export default async function PullsPage({
   const prs = await listPullRequests(found.novel.id);
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
       <div className="flex justify-end">
         <Button
           size="sm"
