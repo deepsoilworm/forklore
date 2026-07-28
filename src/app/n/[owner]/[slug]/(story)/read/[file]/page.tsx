@@ -7,6 +7,7 @@ import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
 import { EpisodePoll } from "@/components/episode-poll";
 import { EpisodeComments } from "@/components/episode-comments";
+import { CollaborationRequestButton } from "@/components/collaboration-request-button";
 
 export default async function ReadEpisodePage({
   params,
@@ -48,20 +49,23 @@ export default async function ReadEpisodePage({
         >
           ← 목차로
         </Link>
-        {writable && (
-          <Button
-            variant="outline"
-            size="sm"
-            nativeButton={false}
-            render={
-              <Link
-                href={`${base}/edit?${branchQuery}&path=${encodeURIComponent(episode.path)}`}
-              />
-            }
-          >
-            편집
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {writable && (
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={
+                <Link
+                  href={`${base}/edit?${branchQuery}&path=${encodeURIComponent(episode.path)}`}
+                />
+              }
+            >
+              편집
+            </Button>
+          )}
+          <CollaborationRequestButton owner={owner} slug={slug} novel={found.novel} />
+        </div>
       </div>
 
       <article className="flex flex-col gap-4">

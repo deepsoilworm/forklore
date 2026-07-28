@@ -61,6 +61,7 @@ CREATE TABLE "collaboration_requests" (
 	"novel_id" uuid NOT NULL,
 	"user_id" uuid NOT NULL,
 	"message" text,
+	"draft_content" text,
 	"status" "collaboration_request_status" DEFAULT 'pending' NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"responded_at" timestamp,

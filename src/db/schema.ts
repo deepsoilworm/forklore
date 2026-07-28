@@ -158,6 +158,9 @@ export const collaborationRequests = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     message: text("message"),
+    // An optional writing sample — "what I'd write for the next chapter" —
+    // so the owner can judge fit/voice before granting write access at all.
+    draftContent: text("draft_content"),
     status: collaborationRequestStatusEnum("status").notNull().default("pending"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     respondedAt: timestamp("responded_at"),

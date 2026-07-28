@@ -3,8 +3,6 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import {
   canWrite,
-  getCollaboratorRole,
-  getMyCollaborationRequest,
   getNovelByOwnerSlug,
   isStarredByUser,
   listOtherNovelsByOwner,
@@ -16,11 +14,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StatusSwitcher } from "@/components/status-switcher";
 import { CoverThumbnail } from "@/components/cover-thumbnail";
+import { CollaborationRequestButton } from "@/components/collaboration-request-button";
 import { stripLeadingHeading } from "@/lib/markdown-utils";
 import { CATEGORY_LABELS, LANGUAGE_LABELS, STATUS_LABELS } from "@/lib/labels";
 import { storyStatusEnum } from "@/db/schema";
 import { toggleStarAction } from "@/lib/actions/engagement";
-import { requestCollaborationAction } from "@/lib/actions/collaborators";
 
 export default async function ReadNovelPage({
   params,
@@ -47,14 +45,6 @@ export default async function ReadNovelPage({
   const writable = session?.user?.id
     ? await canWrite(found.novel, session.user.id)
     : false;
-  const isOwner = found.novel.ownerId === session?.user?.id;
-  const isCollaborator = session?.user?.id
-    ? (await getCollaboratorRole(found.novel.id, session.user.id)) !== null
-    : false;
-  const myRequest =
-    session?.user?.id && !isOwner && !isCollaborator
-      ? await getMyCollaborationRequest(found.novel.id, session.user.id)
-      : null;
   const base = `/n/${owner}/${slug}`;
   const branchQuery = `branch=${encodeURIComponent(branch)}`;
   const writeHref = `${base}/edit?${branchQuery}`;
@@ -122,19 +112,7 @@ export default async function ReadNovelPage({
             새 회차 쓰기
           </Button>
         )}
-        {session?.user && !isOwner && !isCollaborator && (
-          <form action={requestCollaborationAction}>
-            <input type="hidden" name="owner" value={owner} />
-            <input type="hidden" name="slug" value={slug} />
-            <Button type="submit" variant="outline" disabled={myRequest?.status === "pending"}>
-              {myRequest?.status === "pending"
-                ? "협업 요청 대기 중"
-                : myRequest?.status === "rejected"
-                  ? "다시 요청하기"
-                  : "협업 요청하기"}
-            </Button>
-          </form>
-        )}
+        <CollaborationRequestButton owner={owner} slug={slug} novel={found.novel} />
         <div className="ml-auto">
           <BranchSwitcher branches={branches} current={branch} />
         </div>

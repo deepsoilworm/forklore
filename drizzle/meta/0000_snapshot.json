@@ -1,5 +1,5 @@
 {
-  "id": "37f716fb-5f13-437f-9d81-c98f312b24b0",
+  "id": "e7d50fc6-02fc-4856-8603-7d37c5489488",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -453,6 +453,12 @@
         },
         "message": {
           "name": "message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "draft_content": {
+          "name": "draft_content",
           "type": "text",
           "primaryKey": false,
           "notNull": false

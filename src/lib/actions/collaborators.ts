@@ -86,6 +86,7 @@ const requestSchema = z.object({
   owner: z.string(),
   slug: z.string(),
   message: z.string().max(500).optional(),
+  draftContent: z.string().max(20_000).optional(),
 });
 
 export async function requestCollaborationAction(formData: FormData) {
@@ -96,6 +97,7 @@ export async function requestCollaborationAction(formData: FormData) {
     owner: formData.get("owner"),
     slug: formData.get("slug"),
     message: formData.get("message") || undefined,
+    draftContent: formData.get("draftContent") || undefined,
   });
 
   const found = await getNovelByOwnerSlug(parsed.owner, parsed.slug);
@@ -106,10 +108,21 @@ export async function requestCollaborationAction(formData: FormData) {
 
   await db
     .insert(collaborationRequests)
-    .values({ novelId: found.novel.id, userId: session.user.id, message: parsed.message })
+    .values({
+      novelId: found.novel.id,
+      userId: session.user.id,
+      message: parsed.message,
+      draftContent: parsed.draftContent,
+    })
     .onConflictDoUpdate({
       target: [collaborationRequests.novelId, collaborationRequests.userId],
-      set: { status: "pending", message: parsed.message, createdAt: new Date(), respondedAt: null },
+      set: {
+        status: "pending",
+        message: parsed.message,
+        draftContent: parsed.draftContent,
+        createdAt: new Date(),
+        respondedAt: null,
+      },
     });
 
   revalidatePath(`/n/${parsed.owner}/${parsed.slug}/read`);

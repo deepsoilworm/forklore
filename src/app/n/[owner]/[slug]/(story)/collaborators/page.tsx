@@ -80,6 +80,16 @@ export default async function CollaboratorsPage({
                 {request.message && (
                   <p className="pl-10 text-sm text-muted-foreground">{request.message}</p>
                 )}
+                {request.draftContent && (
+                  <details className="ml-10">
+                    <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+                      다음 화 미리 써본 글 보기
+                    </summary>
+                    <p className="mt-2 max-h-64 overflow-y-auto rounded-md bg-muted/40 p-3 text-sm whitespace-pre-wrap">
+                      {request.draftContent}
+                    </p>
+                  </details>
+                )}
               </li>
             ))}
           </ul>
