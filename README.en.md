@@ -11,7 +11,7 @@ The platform itself is open source (MIT) too — anyone can contribute or self-h
 - **Branches.** Keep the canonical story untouched while experimenting with alternate plots, translations, or endings on a branch.
 - **Commits.** Every edit is recorded as a commit with author information.
 - **Pull requests / merges.** Collaborators propose changes as PRs, which are reviewed and merged with a real 3-way git merge — conflicts surface to the user instead of being silently resolved.
-- **Character sheets & an encounter timeline.** Track characters (name/age/appearance/personality/goal/relationships) and the "encounters" where they cross paths. This data is inherently relational, so it lives in Postgres rather than as git files — giving spreadsheet-style editing and character↔encounter cross-lookup.
+- **Character sheets & an encounter timeline.** Each character has freely add/removable custom fields (age, species, home nation — whatever the story needs), plus the "encounters" where characters cross paths and a running log of how a character changes over time. This data is inherently relational, so it lives in Postgres rather than as git files — giving spreadsheet-style editing and character↔encounter cross-lookup.
 - **AI writing assistance.** Continue a scene, get plot suggestions, or request a critique directly from the editor (via the Vercel AI Gateway).
 
 ## Architecture

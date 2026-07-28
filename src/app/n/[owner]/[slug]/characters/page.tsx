@@ -5,14 +5,6 @@ import { canWrite, getNovelByOwnerSlug } from "@/lib/queries";
 import { listCharacters } from "@/lib/character-queries";
 import { Button } from "@/components/ui/button";
 
-const COLUMNS: { key: "age" | "appearance" | "personality" | "goal" | "relationships"; label: string }[] = [
-  { key: "age", label: "나이" },
-  { key: "appearance", label: "외모" },
-  { key: "personality", label: "성격" },
-  { key: "goal", label: "목표" },
-  { key: "relationships", label: "관계" },
-];
-
 export default async function CharactersPage({
   params,
 }: {
@@ -29,6 +21,16 @@ export default async function CharactersPage({
   ]);
 
   const base = `/n/${owner}/${slug}`;
+
+  // Table columns = every distinct field label used by any character in
+  // this story, in first-seen order — characters missing a given label
+  // just show a blank cell for it.
+  const columns: string[] = [];
+  for (const c of characterList) {
+    for (const f of c.fields) {
+      if (!columns.includes(f.label)) columns.push(f.label);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -51,9 +53,9 @@ export default async function CharactersPage({
             <thead>
               <tr className="border-b bg-muted/40 text-left text-muted-foreground">
                 <th className="px-4 py-2 font-medium">이름</th>
-                {COLUMNS.map((col) => (
-                  <th key={col.key} className="px-4 py-2 font-medium">
-                    {col.label}
+                {columns.map((label) => (
+                  <th key={label} className="px-4 py-2 font-medium whitespace-nowrap">
+                    {label}
                   </th>
                 ))}
               </tr>
@@ -61,14 +63,14 @@ export default async function CharactersPage({
             <tbody className="divide-y">
               {characterList.map((c) => (
                 <tr key={c.id} className="hover:bg-accent/50">
-                  <td className="px-4 py-2.5 font-medium">
+                  <td className="px-4 py-2.5 font-medium whitespace-nowrap">
                     <Link href={`${base}/characters/${c.id}`} className="hover:underline">
                       {c.name}
                     </Link>
                   </td>
-                  {COLUMNS.map((col) => (
-                    <td key={col.key} className="px-4 py-2.5 text-muted-foreground">
-                      {c[col.key] || "—"}
+                  {columns.map((label) => (
+                    <td key={label} className="px-4 py-2.5 text-muted-foreground">
+                      {c.fields.find((f) => f.label === label)?.value || "—"}
                     </td>
                   ))}
                 </tr>

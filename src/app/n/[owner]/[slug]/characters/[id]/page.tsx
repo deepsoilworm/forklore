@@ -13,14 +13,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const FIELDS: { key: "age" | "appearance" | "personality" | "goal" | "relationships"; label: string }[] = [
-  { key: "age", label: "나이" },
-  { key: "appearance", label: "외모" },
-  { key: "personality", label: "성격" },
-  { key: "goal", label: "목표" },
-  { key: "relationships", label: "관계" },
-];
-
 export default async function CharacterDetailPage({
   params,
 }: {
@@ -66,14 +58,16 @@ export default async function CharacterDetailPage({
 
       <div className="flex flex-col gap-4">
         <h1 className="text-2xl font-semibold tracking-tight">{character.name}</h1>
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
-          {FIELDS.map((f) => (
-            <div key={f.key}>
-              <dt className="text-muted-foreground">{f.label}</dt>
-              <dd className="mt-0.5">{character[f.key] || "—"}</dd>
-            </div>
-          ))}
-        </dl>
+        {character.fields.length > 0 && (
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
+            {character.fields.map((f) => (
+              <div key={f.id}>
+                <dt className="text-muted-foreground">{f.label}</dt>
+                <dd className="mt-0.5">{f.value}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
         {character.description && (
           <p className="whitespace-pre-wrap border-t pt-4 text-sm leading-7">
             {character.description}

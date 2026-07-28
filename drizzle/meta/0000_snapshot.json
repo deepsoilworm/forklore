@@ -1,5 +1,5 @@
 {
-  "id": "267d2510-7548-421d-ba85-629b148e46bc",
+  "id": "2545bdbf-adb1-4362-8e6c-d053475d74c3",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -272,6 +272,87 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.character_fields": {
+      "name": "character_fields",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "character_id": {
+          "name": "character_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {
+        "character_fields_character_idx": {
+          "name": "character_fields_character_idx",
+          "columns": [
+            {
+              "expression": "character_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "character_fields_character_id_characters_id_fk": {
+          "name": "character_fields_character_id_characters_id_fk",
+          "tableFrom": "character_fields",
+          "tableTo": "characters",
+          "columnsFrom": [
+            "character_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.characters": {
       "name": "characters",
       "schema": "",
@@ -294,36 +375,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
-        },
-        "age": {
-          "name": "age",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "appearance": {
-          "name": "appearance",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "personality": {
-          "name": "personality",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "goal": {
-          "name": "goal",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "relationships": {
-          "name": "relationships",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "description": {
           "name": "description",

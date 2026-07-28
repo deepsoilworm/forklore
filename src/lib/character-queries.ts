@@ -1,22 +1,60 @@
 import { db } from "@/db";
-import { characterDevelopments, characters, encounterParticipants, encounters } from "@/db/schema";
+import {
+  characterDevelopments,
+  characterFields,
+  characters,
+  encounterParticipants,
+  encounters,
+} from "@/db/schema";
 import { and, asc, eq, inArray } from "drizzle-orm";
 
-export async function listCharacters(novelId: string) {
-  return db
+export type CharacterWithFields = typeof characters.$inferSelect & {
+  fields: (typeof characterFields.$inferSelect)[];
+};
+
+export async function listCharacters(novelId: string): Promise<CharacterWithFields[]> {
+  const rows = await db
     .select()
     .from(characters)
     .where(eq(characters.novelId, novelId))
     .orderBy(asc(characters.name));
+  if (rows.length === 0) return [];
+
+  const fields = await db
+    .select()
+    .from(characterFields)
+    .where(
+      inArray(
+        characterFields.characterId,
+        rows.map((r) => r.id),
+      ),
+    )
+    .orderBy(asc(characterFields.order));
+
+  return rows.map((character) => ({
+    ...character,
+    fields: fields.filter((f) => f.characterId === character.id),
+  }));
 }
 
-export async function getCharacter(novelId: string, characterId: string) {
+export async function getCharacter(
+  novelId: string,
+  characterId: string,
+): Promise<CharacterWithFields | null> {
   const [row] = await db
     .select()
     .from(characters)
     .where(and(eq(characters.id, characterId), eq(characters.novelId, novelId)))
     .limit(1);
-  return row ?? null;
+  if (!row) return null;
+
+  const fields = await db
+    .select()
+    .from(characterFields)
+    .where(eq(characterFields.characterId, row.id))
+    .orderBy(asc(characterFields.order));
+
+  return { ...row, fields };
 }
 
 export async function listCharacterDevelopments(characterId: string) {

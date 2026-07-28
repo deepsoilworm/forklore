@@ -1,18 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { saveCharacterAction } from "@/lib/actions/characters";
 
-const FIELDS: { key: "age" | "appearance" | "personality" | "goal" | "relationships"; label: string; placeholder: string }[] = [
-  { key: "age", label: "나이", placeholder: "17" },
-  { key: "appearance", label: "외모", placeholder: "단발머리, 큰 눈" },
-  { key: "personality", label: "성격", placeholder: "호기심 많고 씩씩함" },
-  { key: "goal", label: "목표", placeholder: "여우비의 비밀을 알아내기" },
-  { key: "relationships", label: "관계", placeholder: "여우와 매년 재회" },
-];
+const SUGGESTED_FIELDS = ["나이", "외모", "성격", "목표", "관계"];
 
 export function CharacterForm({
   owner,
@@ -24,14 +19,27 @@ export function CharacterForm({
   initial?: {
     id: string;
     name: string;
-    age: string | null;
-    appearance: string | null;
-    personality: string | null;
-    goal: string | null;
-    relationships: string | null;
     description: string | null;
+    fields: { label: string; value: string }[];
   };
 }) {
+  const [fields, setFields] = useState<{ label: string; value: string }[]>(
+    initial?.fields.map((f) => ({ label: f.label, value: f.value })) ??
+      SUGGESTED_FIELDS.map((label) => ({ label, value: "" })),
+  );
+
+  function updateField(i: number, patch: Partial<{ label: string; value: string }>) {
+    setFields((prev) => prev.map((f, idx) => (idx === i ? { ...f, ...patch } : f)));
+  }
+
+  function removeField(i: number) {
+    setFields((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
+  function addField() {
+    setFields((prev) => [...prev, { label: "", value: "" }]);
+  }
+
   return (
     <form action={saveCharacterAction} className="mx-auto flex w-full max-w-2xl flex-col gap-4">
       <input type="hidden" name="owner" value={owner} />
@@ -43,19 +51,48 @@ export function CharacterForm({
         <Input id="name" name="name" defaultValue={initial?.name} required placeholder="수아" />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {FIELDS.map((f) => (
-          <div key={f.key} className="flex flex-col gap-2">
-            <Label htmlFor={f.key}>{f.label}</Label>
-            <Input
-              id={f.key}
-              name={f.key}
-              defaultValue={initial?.[f.key] ?? ""}
-              placeholder={f.placeholder}
-            />
-          </div>
-        ))}
+      <div className="flex flex-col gap-2">
+        <Label>항목 (나이, 종족, 소속 국가 등 자유롭게 추가/삭제)</Label>
+        <div className="flex flex-col gap-2">
+          {fields.map((f, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <Input
+                aria-label="항목 이름"
+                value={f.label}
+                onChange={(e) => updateField(i, { label: e.target.value })}
+                placeholder="항목 (예: 종족)"
+                className="w-32 shrink-0"
+              />
+              <Input
+                aria-label="값"
+                value={f.value}
+                onChange={(e) => updateField(i, { value: e.target.value })}
+                placeholder="값 (예: 엘프)"
+                className="flex-1"
+              />
+              <button
+                type="button"
+                onClick={() => removeField(i)}
+                className="shrink-0 px-2 text-sm text-muted-foreground hover:text-destructive"
+                aria-label="항목 삭제"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+        <Button type="button" variant="outline" size="sm" onClick={addField} className="self-start">
+          + 항목 추가
+        </Button>
       </div>
+
+      {/* Mirror the field rows into plain inputs the server action can read via getAll. */}
+      {fields.map((f, i) => (
+        <input key={`label-${i}`} type="hidden" name="fieldLabel" value={f.label} />
+      ))}
+      {fields.map((f, i) => (
+        <input key={`value-${i}`} type="hidden" name="fieldValue" value={f.value} />
+      ))}
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="description">설명</Label>

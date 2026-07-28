@@ -251,16 +251,29 @@ export const characters = pgTable(
       .notNull()
       .references(() => novels.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
-    age: text("age"),
-    appearance: text("appearance"),
-    personality: text("personality"),
-    goal: text("goal"),
-    relationships: text("relationships"),
     description: text("description"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (t) => [index("characters_novel_idx").on(t.novelId)],
+);
+
+// Freeform attributes ("나이", "종족", "소속 국가", ...) instead of fixed
+// columns — not every story needs the same fields, and forcing e.g. fantasy
+// races or political affiliations into a generic "personality" column
+// doesn't fit. Each character has its own open-ended label/value list.
+export const characterFields = pgTable(
+  "character_fields",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    characterId: uuid("character_id")
+      .notNull()
+      .references(() => characters.id, { onDelete: "cascade" }),
+    label: text("label").notNull(),
+    value: text("value").notNull(),
+    order: integer("order").notNull().default(0),
+  },
+  (t) => [index("character_fields_character_idx").on(t.characterId, t.order)],
 );
 
 export const encounters = pgTable(

@@ -2,7 +2,13 @@
 
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { characterDevelopments, characters, encounterParticipants, encounters } from "@/db/schema";
+import {
+  characterDevelopments,
+  characterFields,
+  characters,
+  encounterParticipants,
+  encounters,
+} from "@/db/schema";
 import { canWrite, getNovelByOwnerSlug } from "@/lib/queries";
 import { getCharacter } from "@/lib/character-queries";
 import { eq } from "drizzle-orm";
@@ -15,12 +21,9 @@ const characterSchema = z.object({
   slug: z.string(),
   id: z.string().uuid().optional(),
   name: z.string().min(1).max(100),
-  age: z.string().max(50).optional(),
-  appearance: z.string().max(300).optional(),
-  personality: z.string().max(300).optional(),
-  goal: z.string().max(300).optional(),
-  relationships: z.string().max(300).optional(),
   description: z.string().max(2000).optional(),
+  fieldLabel: z.array(z.string().max(50)),
+  fieldValue: z.array(z.string().max(300)),
 });
 
 export async function saveCharacterAction(formData: FormData) {
@@ -32,12 +35,9 @@ export async function saveCharacterAction(formData: FormData) {
     slug: formData.get("slug"),
     id: formData.get("id") || undefined,
     name: formData.get("name"),
-    age: formData.get("age") || undefined,
-    appearance: formData.get("appearance") || undefined,
-    personality: formData.get("personality") || undefined,
-    goal: formData.get("goal") || undefined,
-    relationships: formData.get("relationships") || undefined,
     description: formData.get("description") || undefined,
+    fieldLabel: formData.getAll("fieldLabel"),
+    fieldValue: formData.getAll("fieldValue"),
   });
 
   const found = await getNovelByOwnerSlug(parsed.owner, parsed.slug);
@@ -46,29 +46,33 @@ export async function saveCharacterAction(formData: FormData) {
     throw new Error("쓰기 권한이 없습니다");
   }
 
-  const values = {
-    name: parsed.name,
-    age: parsed.age ?? null,
-    appearance: parsed.appearance ?? null,
-    personality: parsed.personality ?? null,
-    goal: parsed.goal ?? null,
-    relationships: parsed.relationships ?? null,
-    description: parsed.description ?? null,
-  };
+  const fields = parsed.fieldLabel
+    .map((label, i) => ({ label: label.trim(), value: parsed.fieldValue[i]?.trim() ?? "" }))
+    .filter((f) => f.label && f.value);
 
-  let characterId = parsed.id;
-  if (characterId) {
-    await db
-      .update(characters)
-      .set({ ...values, updatedAt: new Date() })
-      .where(eq(characters.id, characterId));
-  } else {
-    const [row] = await db
-      .insert(characters)
-      .values({ ...values, novelId: found.novel.id })
-      .returning();
-    characterId = row.id;
-  }
+  const values = { name: parsed.name, description: parsed.description ?? null };
+
+  const characterId = await db.transaction(async (tx) => {
+    let id = parsed.id;
+    if (id) {
+      await tx.update(characters).set({ ...values, updatedAt: new Date() }).where(eq(characters.id, id));
+      await tx.delete(characterFields).where(eq(characterFields.characterId, id));
+    } else {
+      const [row] = await tx
+        .insert(characters)
+        .values({ ...values, novelId: found.novel.id })
+        .returning();
+      id = row.id;
+    }
+
+    if (fields.length > 0) {
+      await tx.insert(characterFields).values(
+        fields.map((f, i) => ({ characterId: id!, label: f.label, value: f.value, order: i })),
+      );
+    }
+
+    return id;
+  });
 
   revalidatePath(`/n/${parsed.owner}/${parsed.slug}/characters`);
   redirect(`/n/${parsed.owner}/${parsed.slug}/characters/${characterId}`);
