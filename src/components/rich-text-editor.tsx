@@ -1,11 +1,16 @@
 "use client";
 
+import { forwardRef, useImperativeHandle } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Markdown } from "tiptap-markdown";
 import { Bold, Italic, Strikethrough, Heading2, Heading3, Quote } from "lucide-react";
+
+export type RichTextEditorHandle = {
+  focus: () => void;
+};
 
 function BubbleButton({
   onClick,
@@ -92,15 +97,10 @@ function SelectionBubble({ editor }: { editor: Editor | null }) {
   );
 }
 
-export function RichTextEditor({
-  content,
-  onChange,
-  placeholder,
-}: {
-  content: string;
-  onChange: (markdown: string) => void;
-  placeholder?: string;
-}) {
+export const RichTextEditor = forwardRef<
+  RichTextEditorHandle,
+  { content: string; onChange: (markdown: string) => void; placeholder?: string }
+>(function RichTextEditor({ content, onChange, placeholder }, ref) {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -124,10 +124,14 @@ export function RichTextEditor({
     },
   });
 
+  useImperativeHandle(ref, () => ({
+    focus: () => editor?.chain().focus("start").run(),
+  }));
+
   return (
     <>
       <SelectionBubble editor={editor} />
       <EditorContent editor={editor} />
     </>
   );
-}
+});

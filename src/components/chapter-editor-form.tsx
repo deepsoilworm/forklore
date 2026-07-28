@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { RichTextEditor } from "@/components/rich-text-editor";
+import { RichTextEditor, type RichTextEditorHandle } from "@/components/rich-text-editor";
 import { commitChapterAction } from "@/lib/actions/chapters";
 import { joinTitleAndBody } from "@/lib/markdown-utils";
 
@@ -27,6 +27,7 @@ export function ChapterEditorForm({
   const [body, setBody] = useState(initialBody);
   const content = joinTitleAndBody(title, body);
   const charCount = body.replace(/\s/g, "").length;
+  const bodyRef = useRef<RichTextEditorHandle>(null);
 
   return (
     <div className="mx-auto w-full max-w-2xl">
@@ -42,9 +43,12 @@ export function ChapterEditorForm({
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={(e) => {
             // A single-line input submits its form on Enter by default —
-            // fine for the commit-message field below, but not while
-            // naming a chapter (IME confirmation also fires this).
-            if (e.key === "Enter") e.preventDefault();
+            // not what you want while naming a chapter (IME confirmation
+            // also fires this). Move into the body instead, like Notion.
+            if (e.key === "Enter") {
+              e.preventDefault();
+              bodyRef.current?.focus();
+            }
           }}
           required
           placeholder="제목 없음"
@@ -52,6 +56,7 @@ export function ChapterEditorForm({
         />
 
         <RichTextEditor
+          ref={bodyRef}
           content={initialBody}
           onChange={setBody}
           placeholder="본문을 입력하세요… '/' 대신 마크다운 문법을 그대로 쓸 수 있어요 (## 소제목, - 목록, > 인용)"
