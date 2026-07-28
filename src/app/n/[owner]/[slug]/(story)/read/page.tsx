@@ -113,6 +113,17 @@ export default async function ReadNovelPage({
           </Button>
         )}
         <CollaborationRequestButton owner={owner} slug={slug} novel={found.novel} />
+        {episodes.length > 0 && (
+          <Button
+            variant="outline"
+            nativeButton={false}
+            render={
+              <a href={`/api/export/epub?owner=${owner}&slug=${slug}&branch=${encodeURIComponent(branch)}`} />
+            }
+          >
+            EPUB 내보내기
+          </Button>
+        )}
         <div className="ml-auto">
           <BranchSwitcher branches={branches} current={branch} />
         </div>
