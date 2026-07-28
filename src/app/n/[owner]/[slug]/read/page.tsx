@@ -57,7 +57,7 @@ export default async function ReadNovelPage({
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
       <div className="flex items-start gap-5">
-        <div className="flex h-28 w-20 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-muted to-muted/40 text-3xl font-bold text-muted-foreground sm:h-36 sm:w-28 sm:text-4xl">
+        <div className="flex aspect-4/5 w-24 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-muted to-muted/40 text-3xl font-bold text-muted-foreground sm:w-32 sm:text-4xl">
           {found.novel.name.trim()[0]?.toUpperCase()}
         </div>
         <div className="flex flex-1 flex-col gap-2 pt-1">
