@@ -8,6 +8,7 @@ import {
   primaryKey,
   uniqueIndex,
   index,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import type { AdapterAccountType } from "next-auth/adapters";
 
@@ -370,6 +371,26 @@ export const characterFields = pgTable(
   (t) => [index("character_fields_character_idx").on(t.characterId, t.order)],
 );
 
+// A snapshot of a character sheet taken right before it's overwritten —
+// several people can edit the same character, so "what did this look
+// like before that edit" needs to be recoverable without relying on git
+// (this data never lived in git files to begin with).
+export const characterRevisions = pgTable(
+  "character_revisions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    characterId: uuid("character_id")
+      .notNull()
+      .references(() => characters.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    fields: jsonb("fields").notNull().default([]),
+    authorId: uuid("author_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("character_revisions_character_idx").on(t.characterId, t.createdAt)],
+);
+
 // A "track" in the encounter timeline — a plot thread (main plot, a
 // subplot, a character's side arc, ...). Encounters unassigned to any
 // plot line just render in a catch-all "미분류" row.
@@ -529,6 +550,23 @@ export const researchNotes = pgTable(
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (t) => [index("research_notes_novel_idx").on(t.novelId, t.order)],
+);
+
+// A snapshot of a note taken right before it's overwritten — same
+// reasoning as character_revisions above.
+export const researchNoteRevisions = pgTable(
+  "research_note_revisions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    noteId: uuid("note_id")
+      .notNull()
+      .references(() => researchNotes.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    body: text("body"),
+    authorId: uuid("author_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("research_note_revisions_note_idx").on(t.noteId, t.createdAt)],
 );
 
 // AI writing-assist usage, tracked per call so a future paid tier can meter it.

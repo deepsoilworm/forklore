@@ -2,12 +2,14 @@ import { db } from "@/db";
 import {
   characterDevelopments,
   characterFields,
+  characterRevisions,
   characters,
   encounterParticipants,
   encounters,
   plotLines,
+  users,
 } from "@/db/schema";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
 export async function listPlotLines(novelId: string) {
   return db
@@ -64,6 +66,24 @@ export async function getCharacter(
     .orderBy(asc(characterFields.order));
 
   return { ...row, fields };
+}
+
+export async function listCharacterRevisions(characterId: string) {
+  return db
+    .select({ revision: characterRevisions, author: users })
+    .from(characterRevisions)
+    .leftJoin(users, eq(characterRevisions.authorId, users.id))
+    .where(eq(characterRevisions.characterId, characterId))
+    .orderBy(desc(characterRevisions.createdAt));
+}
+
+export async function getCharacterRevision(characterId: string, revisionId: string) {
+  const [row] = await db
+    .select()
+    .from(characterRevisions)
+    .where(and(eq(characterRevisions.id, revisionId), eq(characterRevisions.characterId, characterId)))
+    .limit(1);
+  return row ?? null;
 }
 
 export async function listCharacterDevelopments(characterId: string) {

@@ -2,9 +2,9 @@
 
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { researchNotes } from "@/db/schema";
+import { researchNoteRevisions, researchNotes } from "@/db/schema";
 import { canWrite, getNovelByOwnerSlug } from "@/lib/queries";
-import { getResearchNote } from "@/lib/note-queries";
+import { getResearchNote, getResearchNoteRevision } from "@/lib/note-queries";
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -79,10 +79,67 @@ export async function updateResearchNoteAction(formData: FormData) {
   const existing = await getResearchNote(found.novel.id, parsed.noteId);
   if (!existing) throw new Error("노트를 찾을 수 없습니다");
 
-  await db
-    .update(researchNotes)
-    .set({ title: parsed.title, body: parsed.body, updatedAt: new Date() })
-    .where(and(eq(researchNotes.id, parsed.noteId), eq(researchNotes.novelId, found.novel.id)));
+  await db.transaction(async (tx) => {
+    // Multiple collaborators can edit the same note — snapshot what it
+    // looked like right before this edit overwrites it.
+    await tx.insert(researchNoteRevisions).values({
+      noteId: parsed.noteId,
+      title: existing.title,
+      body: existing.body,
+      authorId: session.user!.id,
+    });
+
+    await tx
+      .update(researchNotes)
+      .set({ title: parsed.title, body: parsed.body, updatedAt: new Date() })
+      .where(and(eq(researchNotes.id, parsed.noteId), eq(researchNotes.novelId, found.novel.id)));
+  });
+
+  redirect(`/n/${parsed.owner}/${parsed.slug}/notes/${parsed.noteId}`);
+}
+
+const restoreSchema = z.object({
+  owner: z.string(),
+  slug: z.string(),
+  noteId: z.string().uuid(),
+  revisionId: z.string().uuid(),
+});
+
+export async function restoreResearchNoteRevisionAction(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("로그인이 필요합니다");
+
+  const parsed = restoreSchema.parse({
+    owner: formData.get("owner"),
+    slug: formData.get("slug"),
+    noteId: formData.get("noteId"),
+    revisionId: formData.get("revisionId"),
+  });
+
+  const found = await getNovelByOwnerSlug(parsed.owner, parsed.slug);
+  if (!found) throw new Error("이야기를 찾을 수 없습니다");
+  if (!(await canWrite(found.novel, session.user.id))) {
+    throw new Error("쓰기 권한이 없습니다");
+  }
+
+  const [current, revision] = await Promise.all([
+    getResearchNote(found.novel.id, parsed.noteId),
+    getResearchNoteRevision(parsed.noteId, parsed.revisionId),
+  ]);
+  if (!current || !revision) throw new Error("찾을 수 없습니다");
+
+  await db.transaction(async (tx) => {
+    await tx.insert(researchNoteRevisions).values({
+      noteId: current.id,
+      title: current.title,
+      body: current.body,
+      authorId: session.user!.id,
+    });
+    await tx
+      .update(researchNotes)
+      .set({ title: revision.title, body: revision.body, updatedAt: new Date() })
+      .where(eq(researchNotes.id, current.id));
+  });
 
   redirect(`/n/${parsed.owner}/${parsed.slug}/notes/${parsed.noteId}`);
 }

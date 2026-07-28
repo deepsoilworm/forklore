@@ -48,6 +48,16 @@ CREATE TABLE "character_fields" (
 	"order" integer DEFAULT 0 NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "character_revisions" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"character_id" uuid NOT NULL,
+	"name" text NOT NULL,
+	"description" text,
+	"fields" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"author_id" uuid,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "characters" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"novel_id" uuid NOT NULL,
@@ -228,6 +238,15 @@ CREATE TABLE "refs" (
 	CONSTRAINT "refs_novel_id_name_pk" PRIMARY KEY("novel_id","name")
 );
 --> statement-breakpoint
+CREATE TABLE "research_note_revisions" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"note_id" uuid NOT NULL,
+	"title" text NOT NULL,
+	"body" text,
+	"author_id" uuid,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "research_notes" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"novel_id" uuid NOT NULL,
@@ -278,6 +297,8 @@ ALTER TABLE "ai_usage" ADD CONSTRAINT "ai_usage_user_id_users_id_fk" FOREIGN KEY
 ALTER TABLE "ai_usage" ADD CONSTRAINT "ai_usage_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "character_developments" ADD CONSTRAINT "character_developments_character_id_characters_id_fk" FOREIGN KEY ("character_id") REFERENCES "public"."characters"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "character_fields" ADD CONSTRAINT "character_fields_character_id_characters_id_fk" FOREIGN KEY ("character_id") REFERENCES "public"."characters"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "character_revisions" ADD CONSTRAINT "character_revisions_character_id_characters_id_fk" FOREIGN KEY ("character_id") REFERENCES "public"."characters"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "character_revisions" ADD CONSTRAINT "character_revisions_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "characters" ADD CONSTRAINT "characters_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "collaboration_requests" ADD CONSTRAINT "collaboration_requests_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "collaboration_requests" ADD CONSTRAINT "collaboration_requests_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -310,6 +331,8 @@ ALTER TABLE "pr_comments" ADD CONSTRAINT "pr_comments_author_id_users_id_fk" FOR
 ALTER TABLE "pull_requests" ADD CONSTRAINT "pull_requests_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pull_requests" ADD CONSTRAINT "pull_requests_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "refs" ADD CONSTRAINT "refs_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "research_note_revisions" ADD CONSTRAINT "research_note_revisions_note_id_research_notes_id_fk" FOREIGN KEY ("note_id") REFERENCES "public"."research_notes"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "research_note_revisions" ADD CONSTRAINT "research_note_revisions_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "research_notes" ADD CONSTRAINT "research_notes_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "research_notes" ADD CONSTRAINT "research_notes_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -317,6 +340,7 @@ ALTER TABLE "stars" ADD CONSTRAINT "stars_novel_id_novels_id_fk" FOREIGN KEY ("n
 ALTER TABLE "stars" ADD CONSTRAINT "stars_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "character_developments_character_idx" ON "character_developments" USING btree ("character_id","order");--> statement-breakpoint
 CREATE INDEX "character_fields_character_idx" ON "character_fields" USING btree ("character_id","order");--> statement-breakpoint
+CREATE INDEX "character_revisions_character_idx" ON "character_revisions" USING btree ("character_id","created_at");--> statement-breakpoint
 CREATE INDEX "characters_novel_idx" ON "characters" USING btree ("novel_id");--> statement-breakpoint
 CREATE INDEX "commits_novel_branch_idx" ON "commits" USING btree ("novel_id","branch");--> statement-breakpoint
 CREATE INDEX "commits_author_idx" ON "commits" USING btree ("author_id","created_at");--> statement-breakpoint
@@ -334,4 +358,5 @@ CREATE UNIQUE INDEX "polls_episode_idx" ON "polls" USING btree ("novel_id","epis
 CREATE UNIQUE INDEX "pr_novel_number_idx" ON "pull_requests" USING btree ("novel_id","number");--> statement-breakpoint
 CREATE INDEX "pr_novel_status_idx" ON "pull_requests" USING btree ("novel_id","status");--> statement-breakpoint
 CREATE INDEX "refs_novel_idx" ON "refs" USING btree ("novel_id");--> statement-breakpoint
+CREATE INDEX "research_note_revisions_note_idx" ON "research_note_revisions" USING btree ("note_id","created_at");--> statement-breakpoint
 CREATE INDEX "research_notes_novel_idx" ON "research_notes" USING btree ("novel_id","order");

@@ -5,13 +5,14 @@ import { db } from "@/db";
 import {
   characterDevelopments,
   characterFields,
+  characterRevisions,
   characters,
   encounterParticipants,
   encounters,
   plotLines,
 } from "@/db/schema";
 import { canWrite, getNovelByOwnerSlug } from "@/lib/queries";
-import { getCharacter } from "@/lib/character-queries";
+import { getCharacter, getCharacterRevision } from "@/lib/character-queries";
 import { and, eq, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -53,9 +54,24 @@ export async function saveCharacterAction(formData: FormData) {
 
   const values = { name: parsed.name, description: parsed.description ?? null };
 
+  // Multiple collaborators can edit the same character — snapshot what
+  // it looked like right before this edit overwrites it, so it's
+  // recoverable without relying on git (this data never lived in git
+  // files to begin with).
+  const previous = parsed.id ? await getCharacter(found.novel.id, parsed.id) : null;
+
   const characterId = await db.transaction(async (tx) => {
     let id = parsed.id;
     if (id) {
+      if (previous) {
+        await tx.insert(characterRevisions).values({
+          characterId: id,
+          name: previous.name,
+          description: previous.description,
+          fields: previous.fields.map((f) => ({ label: f.label, value: f.value })),
+          authorId: session.user.id,
+        });
+      }
       await tx.update(characters).set({ ...values, updatedAt: new Date() }).where(eq(characters.id, id));
       await tx.delete(characterFields).where(eq(characterFields.characterId, id));
     } else {
@@ -77,6 +93,70 @@ export async function saveCharacterAction(formData: FormData) {
 
   revalidatePath(`/n/${parsed.owner}/${parsed.slug}/characters`);
   redirect(`/n/${parsed.owner}/${parsed.slug}/characters/${characterId}`);
+}
+
+const restoreSchema = z.object({
+  owner: z.string(),
+  slug: z.string(),
+  characterId: z.string().uuid(),
+  revisionId: z.string().uuid(),
+});
+
+export async function restoreCharacterRevisionAction(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("로그인이 필요합니다");
+
+  const parsed = restoreSchema.parse({
+    owner: formData.get("owner"),
+    slug: formData.get("slug"),
+    characterId: formData.get("characterId"),
+    revisionId: formData.get("revisionId"),
+  });
+
+  const found = await getNovelByOwnerSlug(parsed.owner, parsed.slug);
+  if (!found) throw new Error("이야기를 찾을 수 없습니다");
+  if (!(await canWrite(found.novel, session.user.id))) {
+    throw new Error("쓰기 권한이 없습니다");
+  }
+
+  const [current, revision] = await Promise.all([
+    getCharacter(found.novel.id, parsed.characterId),
+    getCharacterRevision(parsed.characterId, parsed.revisionId),
+  ]);
+  if (!current || !revision) throw new Error("찾을 수 없습니다");
+
+  const revisionFields = revision.fields as { label: string; value: string }[];
+
+  await db.transaction(async (tx) => {
+    // Restoring is just another edit — snapshot the current state too,
+    // so restoring never destroys history, it only adds to it.
+    await tx.insert(characterRevisions).values({
+      characterId: current.id,
+      name: current.name,
+      description: current.description,
+      fields: current.fields.map((f) => ({ label: f.label, value: f.value })),
+      authorId: session.user.id,
+    });
+
+    await tx
+      .update(characters)
+      .set({ name: revision.name, description: revision.description, updatedAt: new Date() })
+      .where(eq(characters.id, current.id));
+    await tx.delete(characterFields).where(eq(characterFields.characterId, current.id));
+    if (revisionFields.length > 0) {
+      await tx.insert(characterFields).values(
+        revisionFields.map((f, i) => ({
+          characterId: current.id,
+          label: f.label,
+          value: f.value,
+          order: i,
+        })),
+      );
+    }
+  });
+
+  revalidatePath(`/n/${parsed.owner}/${parsed.slug}/characters/${parsed.characterId}`);
+  redirect(`/n/${parsed.owner}/${parsed.slug}/characters/${parsed.characterId}`);
 }
 
 const encounterSchema = z.object({

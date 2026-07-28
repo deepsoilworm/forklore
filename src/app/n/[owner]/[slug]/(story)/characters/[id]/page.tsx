@@ -5,13 +5,15 @@ import { canWrite, getNovelByOwnerSlug } from "@/lib/queries";
 import {
   getCharacter,
   listCharacterDevelopments,
+  listCharacterRevisions,
   listEncountersForCharacter,
 } from "@/lib/character-queries";
-import { addCharacterDevelopmentAction } from "@/lib/actions/characters";
+import { addCharacterDevelopmentAction, restoreCharacterRevisionAction } from "@/lib/actions/characters";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { formatDistanceToNow } from "date-fns";
 
 export default async function CharacterDetailPage({
   params,
@@ -25,10 +27,11 @@ export default async function CharacterDetailPage({
   const character = await getCharacter(found.novel.id, id);
   if (!character) notFound();
 
-  const [session, encounters, developments] = await Promise.all([
+  const [session, encounters, developments, revisions] = await Promise.all([
     auth(),
     listEncountersForCharacter(character.id),
     listCharacterDevelopments(character.id),
+    listCharacterRevisions(character.id),
   ]);
   const writable = session?.user?.id
     ? await canWrite(found.novel, session.user.id)
@@ -129,6 +132,38 @@ export default async function CharacterDetailPage({
           </details>
         )}
       </div>
+
+      {revisions.length > 0 && (
+        <details className="border-t pt-6">
+          <summary className="cursor-pointer px-1 text-sm font-medium text-muted-foreground">
+            버전 기록 ({revisions.length})
+          </summary>
+          <ul className="mt-3 flex flex-col gap-1.5">
+            {revisions.map(({ revision, author }) => (
+              <li
+                key={revision.id}
+                className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-sm"
+              >
+                <span className="text-muted-foreground">
+                  {author?.username ?? "알 수 없음"} ·{" "}
+                  {formatDistanceToNow(revision.createdAt, { addSuffix: true })} · {revision.name}
+                </span>
+                {writable && (
+                  <form action={restoreCharacterRevisionAction}>
+                    <input type="hidden" name="owner" value={owner} />
+                    <input type="hidden" name="slug" value={slug} />
+                    <input type="hidden" name="characterId" value={character.id} />
+                    <input type="hidden" name="revisionId" value={revision.id} />
+                    <Button type="submit" variant="outline" size="sm">
+                      이 버전으로 복원
+                    </Button>
+                  </form>
+                )}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
 
       {encounters.length > 0 && (
         <div className="flex flex-col gap-2 border-t pt-6">
