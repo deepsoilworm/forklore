@@ -26,18 +26,22 @@ export default async function NovelLayout({
 
   const base = `/n/${owner}/${slug}`;
   const primaryTabs = [{ href: `${base}/read`, label: "읽기" }];
-  const moreTabs = [
-    { href: base, label: "코드" },
+  // Grouped, not one flat list — this work's own material vs. the
+  // underlying git mechanics are different kinds of thing.
+  const workTabs = [
     { href: `${base}/characters`, label: "인물" },
     { href: `${base}/encounters`, label: "만남" },
     { href: `${base}/notes`, label: "노트" },
-    { href: `${base}/commits`, label: "커밋" },
-    { href: `${base}/branches`, label: "브랜치" },
-    { href: `${base}/pulls`, label: "풀 리퀘스트" },
     { href: `${base}/issues`, label: "이슈" },
     ...(found.novel.ownerId === session?.user?.id
       ? [{ href: `${base}/collaborators`, label: "협업자" }]
       : []),
+  ];
+  const codeTabs = [
+    { href: base, label: "코드" },
+    { href: `${base}/commits`, label: "커밋" },
+    { href: `${base}/branches`, label: "브랜치" },
+    { href: `${base}/pulls`, label: "풀 리퀘스트" },
   ];
 
   return (
@@ -48,7 +52,7 @@ export default async function NovelLayout({
           <h1 className="mb-4 truncate text-2xl font-semibold tracking-tight">
             {found.novel.name}
           </h1>
-          <StoryTabs primary={primaryTabs} more={moreTabs} />
+          <StoryTabs primary={primaryTabs} moreGroups={[workTabs, codeTabs]} />
         </div>
       </div>
       <main className="min-w-0 flex-1 px-4 py-8 lg:px-8">{children}</main>
