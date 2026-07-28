@@ -238,6 +238,62 @@ export const stars = pgTable(
 // git blob/commit sha, so comments stay attached to "chapter 3" across
 // edits — if the file is renamed they're orphaned, which is an acceptable
 // MVP tradeoff since chapter paths rarely change once published.
+// Character sheets and the encounters between them live in Postgres rather
+// than as git files. Unlike prose, this is inherently relational data (an
+// encounter references N characters) — modeling it as real foreign keys
+// gives a much better editing/browsing experience than parsing markdown,
+// at the cost of not being branch/commit-versioned like the story text.
+export const characters = pgTable(
+  "characters",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    novelId: uuid("novel_id")
+      .notNull()
+      .references(() => novels.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    age: text("age"),
+    appearance: text("appearance"),
+    personality: text("personality"),
+    goal: text("goal"),
+    relationships: text("relationships"),
+    description: text("description"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("characters_novel_idx").on(t.novelId)],
+);
+
+export const encounters = pgTable(
+  "encounters",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    novelId: uuid("novel_id")
+      .notNull()
+      .references(() => novels.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description"),
+    order: integer("order").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("encounters_novel_idx").on(t.novelId, t.order)],
+);
+
+export const encounterParticipants = pgTable(
+  "encounter_participants",
+  {
+    encounterId: uuid("encounter_id")
+      .notNull()
+      .references(() => encounters.id, { onDelete: "cascade" }),
+    characterId: uuid("character_id")
+      .notNull()
+      .references(() => characters.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.encounterId, t.characterId] }),
+    index("encounter_participants_character_idx").on(t.characterId),
+  ],
+);
+
 export const episodeComments = pgTable(
   "episode_comments",
   {

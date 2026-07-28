@@ -2,12 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { canWrite, getNovelByOwnerSlug } from "@/lib/queries";
-import { listBranches, listMarkdownEntries } from "@/lib/git/novel-repo";
-import { parseCharacterSheet } from "@/lib/character-utils";
+import { listCharacters } from "@/lib/character-queries";
 import { Button } from "@/components/ui/button";
-import { BranchSwitcher } from "@/components/branch-switcher";
-
-const PREFIX = "characters/";
 
 const COLUMNS: { key: "age" | "appearance" | "personality" | "goal" | "relationships"; label: string }[] = [
   { key: "age", label: "나이" },
@@ -19,52 +15,32 @@ const COLUMNS: { key: "age" | "appearance" | "personality" | "goal" | "relations
 
 export default async function CharactersPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ owner: string; slug: string }>;
-  searchParams: Promise<{ branch?: string }>;
 }) {
   const { owner, slug } = await params;
-  const { branch: branchParam } = await searchParams;
   const found = await getNovelByOwnerSlug(owner, slug);
   if (!found) notFound();
 
-  const branch = branchParam || found.novel.defaultBranch;
-  const [session, branches, entries] = await Promise.all([
-    auth(),
-    listBranches(found.novel.id),
-    listMarkdownEntries({ novelId: found.novel.id, ref: branch, prefix: PREFIX }),
+  const session = await auth();
+  const [writable, characterList] = await Promise.all([
+    session?.user?.id ? canWrite(found.novel, session.user.id) : false,
+    listCharacters(found.novel.id),
   ]);
 
-  const writable = session?.user?.id
-    ? await canWrite(found.novel, session.user.id)
-    : false;
   const base = `/n/${owner}/${slug}`;
-  const characters = entries.map((entry) => ({
-    ...entry,
-    fields: parseCharacterSheet(entry.content, entry.file.replace(/\.md$/, "")),
-  }));
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <BranchSwitcher branches={branches} current={branch} />
+      <div className="flex justify-end">
         {writable && (
-          <Button
-            size="sm"
-            nativeButton={false}
-            render={
-              <Link
-                href={`${base}/edit?branch=${encodeURIComponent(branch)}&kind=character`}
-              />
-            }
-          >
+          <Button size="sm" nativeButton={false} render={<Link href={`${base}/characters/new`} />}>
             새 인물 만들기
           </Button>
         )}
       </div>
 
-      {characters.length === 0 ? (
+      {characterList.length === 0 ? (
         <p className="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
           아직 등록된 인물이 없어요. 이름, 관계, 설정을 정리해두면 협업자들과 일관성을
           맞추기 쉬워져요.
@@ -83,19 +59,16 @@ export default async function CharactersPage({
               </tr>
             </thead>
             <tbody className="divide-y">
-              {characters.map(({ path, file, fields }) => (
-                <tr key={path} className="hover:bg-accent/50">
+              {characterList.map((c) => (
+                <tr key={c.id} className="hover:bg-accent/50">
                   <td className="px-4 py-2.5 font-medium">
-                    <Link
-                      href={`${base}/characters/${encodeURIComponent(file)}?branch=${encodeURIComponent(branch)}`}
-                      className="hover:underline"
-                    >
-                      {fields.name}
+                    <Link href={`${base}/characters/${c.id}`} className="hover:underline">
+                      {c.name}
                     </Link>
                   </td>
                   {COLUMNS.map((col) => (
                     <td key={col.key} className="px-4 py-2.5 text-muted-foreground">
-                      {fields[col.key] || "—"}
+                      {c[col.key] || "—"}
                     </td>
                   ))}
                 </tr>
