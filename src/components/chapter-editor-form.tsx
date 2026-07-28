@@ -14,6 +14,7 @@ export function ChapterEditorForm({
   branch,
   novelId,
   path,
+  defaultFilepathPrefix = "chapters/",
   initialContent,
 }: {
   owner: string;
@@ -21,6 +22,7 @@ export function ChapterEditorForm({
   branch: string;
   novelId: string;
   path: string | null;
+  defaultFilepathPrefix?: string;
   initialContent: string;
 }) {
   const [content, setContent] = useState(initialContent);
@@ -36,7 +38,7 @@ export function ChapterEditorForm({
           <Input
             id="filepath"
             name="filepath"
-            defaultValue={path ?? "chapters/"}
+            defaultValue={path ?? defaultFilepathPrefix}
             placeholder="chapters/01-prologue.md"
             required
             readOnly={Boolean(path)}

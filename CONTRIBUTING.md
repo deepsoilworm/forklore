@@ -1,5 +1,7 @@
 # 기여 가이드
 
+**[English](./CONTRIBUTING.en.md) | 한국어 | [日本語](./CONTRIBUTING.ja.md)**
+
 Forklore는 오픈소스 프로젝트이며 기여를 환영합니다.
 
 ## 개발 환경

@@ -17,6 +17,7 @@ export default async function NovelLayout({
   const base = `/n/${owner}/${slug}`;
   const tabs = [
     { href: base, label: "코드" },
+    { href: `${base}/characters`, label: "인물" },
     { href: `${base}/commits`, label: "커밋" },
     { href: `${base}/branches`, label: "브랜치" },
     { href: `${base}/pulls`, label: "풀 리퀘스트" },

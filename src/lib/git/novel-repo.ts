@@ -147,11 +147,17 @@ export async function getChapterContent(opts: {
   }
 }
 
-export async function listChapterFiles(opts: { novelId: string; ref: string }) {
+export async function listMarkdownFiles(opts: {
+  novelId: string;
+  ref: string;
+  prefix?: string;
+}) {
   const { dir } = await checkoutScratchDir(opts.novelId);
   try {
     const files = await gitOps.listFilesAtRef(dir, opts.ref);
-    return files.filter((f) => f.endsWith(".md"));
+    return files
+      .filter((f) => f.endsWith(".md"))
+      .filter((f) => !opts.prefix || f.startsWith(opts.prefix));
   } finally {
     await discardScratchDir(dir);
   }

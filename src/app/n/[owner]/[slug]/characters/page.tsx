@@ -2,15 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { canWrite, getNovelByOwnerSlug } from "@/lib/queries";
-import {
-  getChapterContent,
-  listBranches,
-  listMarkdownFiles,
-} from "@/lib/git/novel-repo";
+import { listBranches, listMarkdownFiles } from "@/lib/git/novel-repo";
 import { Button } from "@/components/ui/button";
 import { BranchSwitcher } from "@/components/branch-switcher";
 
-export default async function NovelOverviewPage({
+export default async function CharactersPage({
   params,
   searchParams,
 }: {
@@ -23,15 +19,10 @@ export default async function NovelOverviewPage({
   if (!found) notFound();
 
   const branch = branchParam || found.novel.defaultBranch;
-  const [session, branches, chapters, readme] = await Promise.all([
+  const [session, branches, characters] = await Promise.all([
     auth(),
     listBranches(found.novel.id),
-    listMarkdownFiles({ novelId: found.novel.id, ref: branch, prefix: "chapters/" }),
-    getChapterContent({
-      novelId: found.novel.id,
-      ref: branch,
-      filepath: "README.md",
-    }),
+    listMarkdownFiles({ novelId: found.novel.id, ref: branch, prefix: "characters/" }),
   ]);
 
   const writable = session?.user?.id
@@ -46,27 +37,32 @@ export default async function NovelOverviewPage({
         {writable && (
           <Button
             size="sm"
-            render={<Link href={`${base}/edit?branch=${encodeURIComponent(branch)}`} />}
+            render={
+              <Link
+                href={`${base}/edit?branch=${encodeURIComponent(branch)}&kind=character`}
+              />
+            }
           >
-            새 챕터 쓰기
+            새 인물 만들기
           </Button>
         )}
       </div>
 
       <div className="rounded-md border">
         <div className="border-b bg-muted/40 px-4 py-2 text-sm font-medium">
-          챕터
+          인물
         </div>
-        {chapters.length === 0 ? (
+        {characters.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">
-            아직 챕터가 없어요.
+            아직 등록된 인물이 없어요. 이름, 관계, 설정을 정리해두면 협업자들과 일관성을
+            맞추기 쉬워져요.
           </p>
         ) : (
           <ul className="divide-y">
-            {chapters.map((path) => (
+            {characters.map((path) => (
               <li key={path}>
                 <Link
-                  href={`${base}/edit?branch=${encodeURIComponent(branch)}&path=${encodeURIComponent(path)}`}
+                  href={`${base}/edit?branch=${encodeURIComponent(branch)}&path=${encodeURIComponent(path)}&kind=character`}
                   className="flex items-center px-4 py-2.5 text-sm hover:bg-accent/50"
                 >
                   {path}
@@ -76,12 +72,6 @@ export default async function NovelOverviewPage({
           </ul>
         )}
       </div>
-
-      {readme && (
-        <article className="rounded-md border p-4 text-sm whitespace-pre-wrap">
-          {readme}
-        </article>
-      )}
     </div>
   );
 }
