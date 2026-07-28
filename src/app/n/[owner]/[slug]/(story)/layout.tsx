@@ -30,6 +30,7 @@ export default async function NovelLayout({
     { href: base, label: "코드" },
     { href: `${base}/characters`, label: "인물" },
     { href: `${base}/encounters`, label: "만남" },
+    { href: `${base}/notes`, label: "노트" },
     { href: `${base}/commits`, label: "커밋" },
     { href: `${base}/branches`, label: "브랜치" },
     { href: `${base}/pulls`, label: "풀 리퀘스트" },

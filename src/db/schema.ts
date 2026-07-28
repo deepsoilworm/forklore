@@ -502,6 +502,28 @@ export const pollVotes = pgTable(
   (t) => [primaryKey({ columns: [t.pollId, t.userId] })],
 );
 
+// Freeform reference material (worldbuilding notes, sources, etc.) kept
+// separate from characters/encounters — those are structured records,
+// this is just open-ended notes an author jots down while writing.
+export const researchNotes = pgTable(
+  "research_notes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    novelId: uuid("novel_id")
+      .notNull()
+      .references(() => novels.id, { onDelete: "cascade" }),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    body: text("body"),
+    order: integer("order").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("research_notes_novel_idx").on(t.novelId, t.order)],
+);
+
 // AI writing-assist usage, tracked per call so a future paid tier can meter it.
 export const aiUsage = pgTable("ai_usage", {
   id: uuid("id").primaryKey().defaultRandom(),
