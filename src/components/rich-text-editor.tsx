@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useImperativeHandle } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
@@ -99,8 +99,18 @@ function SelectionBubble({ editor }: { editor: Editor | null }) {
 
 export const RichTextEditor = forwardRef<
   RichTextEditorHandle,
-  { content: string; onChange: (markdown: string) => void; placeholder?: string }
->(function RichTextEditor({ content, onChange, placeholder }, ref) {
+  {
+    content: string;
+    onChange: (markdown: string) => void;
+    placeholder?: string;
+    typewriterMode?: boolean;
+  }
+>(function RichTextEditor({ content, onChange, placeholder, typewriterMode }, ref) {
+  const typewriterModeRef = useRef(typewriterMode);
+  useEffect(() => {
+    typewriterModeRef.current = typewriterMode;
+  }, [typewriterMode]);
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -112,6 +122,13 @@ export const RichTextEditor = forwardRef<
     onUpdate: ({ editor }) => {
       const storage = editor.storage as unknown as { markdown: { getMarkdown(): string } };
       onChange(storage.markdown.getMarkdown());
+    },
+    onSelectionUpdate: ({ editor }) => {
+      if (!typewriterModeRef.current) return;
+      const { from } = editor.state.selection;
+      const coords = editor.view.coordsAtPos(from);
+      const target = window.scrollY + coords.top - window.innerHeight / 2;
+      window.scrollTo({ top: target, behavior: "smooth" });
     },
     editorProps: {
       attributes: {
