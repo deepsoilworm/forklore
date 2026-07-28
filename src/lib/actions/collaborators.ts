@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { collaborators, users } from "@/db/schema";
+import { collaborationRequests, collaborators, users } from "@/db/schema";
 import { getNovelByOwnerSlug } from "@/lib/queries";
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -78,6 +78,85 @@ export async function removeCollaboratorAction(formData: FormData) {
   await db
     .delete(collaborators)
     .where(and(eq(collaborators.novelId, found.novel.id), eq(collaborators.userId, parsed.userId)));
+
+  revalidatePath(`/n/${parsed.owner}/${parsed.slug}/collaborators`);
+}
+
+const requestSchema = z.object({
+  owner: z.string(),
+  slug: z.string(),
+  message: z.string().max(500).optional(),
+});
+
+export async function requestCollaborationAction(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("로그인이 필요합니다");
+
+  const parsed = requestSchema.parse({
+    owner: formData.get("owner"),
+    slug: formData.get("slug"),
+    message: formData.get("message") || undefined,
+  });
+
+  const found = await getNovelByOwnerSlug(parsed.owner, parsed.slug);
+  if (!found) throw new Error("이야기를 찾을 수 없습니다");
+  if (found.novel.ownerId === session.user.id) {
+    throw new Error("이미 작성자예요");
+  }
+
+  await db
+    .insert(collaborationRequests)
+    .values({ novelId: found.novel.id, userId: session.user.id, message: parsed.message })
+    .onConflictDoUpdate({
+      target: [collaborationRequests.novelId, collaborationRequests.userId],
+      set: { status: "pending", message: parsed.message, createdAt: new Date(), respondedAt: null },
+    });
+
+  revalidatePath(`/n/${parsed.owner}/${parsed.slug}/read`);
+}
+
+const respondSchema = z.object({
+  owner: z.string(),
+  slug: z.string(),
+  userId: z.string().uuid(),
+  accept: z.coerce.boolean(),
+});
+
+export async function respondCollaborationRequestAction(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("로그인이 필요합니다");
+
+  const parsed = respondSchema.parse({
+    owner: formData.get("owner"),
+    slug: formData.get("slug"),
+    userId: formData.get("userId"),
+    accept: formData.get("accept"),
+  });
+
+  const found = await getNovelByOwnerSlug(parsed.owner, parsed.slug);
+  if (!found) throw new Error("이야기를 찾을 수 없습니다");
+  if (found.novel.ownerId !== session.user.id) {
+    throw new Error("협업자 관리는 작성자만 할 수 있습니다");
+  }
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(collaborationRequests)
+      .set({ status: parsed.accept ? "accepted" : "rejected", respondedAt: new Date() })
+      .where(
+        and(
+          eq(collaborationRequests.novelId, found.novel.id),
+          eq(collaborationRequests.userId, parsed.userId),
+        ),
+      );
+
+    if (parsed.accept) {
+      await tx
+        .insert(collaborators)
+        .values({ novelId: found.novel.id, userId: parsed.userId, role: "writer" })
+        .onConflictDoNothing();
+    }
+  });
 
   revalidatePath(`/n/${parsed.owner}/${parsed.slug}/collaborators`);
 }

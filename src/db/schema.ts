@@ -139,6 +139,32 @@ export const collaborators = pgTable(
   (t) => [primaryKey({ columns: [t.novelId, t.userId] })],
 );
 
+export const collaborationRequestStatusEnum = pgEnum("collaboration_request_status", [
+  "pending",
+  "accepted",
+  "rejected",
+]);
+
+// A reader asking to become a collaborator, the other direction from an
+// owner-initiated invite. One row per (novel, user) — re-requesting after a
+// rejection just flips the same row back to "pending".
+export const collaborationRequests = pgTable(
+  "collaboration_requests",
+  {
+    novelId: uuid("novel_id")
+      .notNull()
+      .references(() => novels.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    message: text("message"),
+    status: collaborationRequestStatusEnum("status").notNull().default("pending"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    respondedAt: timestamp("responded_at"),
+  },
+  (t) => [primaryKey({ columns: [t.novelId, t.userId] })],
+);
+
 // Denormalized ref cache (branches). Source of truth is the packed repo;
 // this exists purely so the UI can list branches without a blob fetch.
 export const refs = pgTable(

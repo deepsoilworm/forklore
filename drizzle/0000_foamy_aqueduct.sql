@@ -1,4 +1,5 @@
 CREATE TYPE "public"."category" AS ENUM('fantasy', 'romance', 'wuxia', 'sf', 'mystery', 'drama', 'horror', 'bl', 'historical', 'other');--> statement-breakpoint
+CREATE TYPE "public"."collaboration_request_status" AS ENUM('pending', 'accepted', 'rejected');--> statement-breakpoint
 CREATE TYPE "public"."issue_status" AS ENUM('open', 'closed');--> statement-breakpoint
 CREATE TYPE "public"."language" AS ENUM('ko', 'en', 'ja', 'other');--> statement-breakpoint
 CREATE TYPE "public"."plan" AS ENUM('free', 'pro');--> statement-breakpoint
@@ -54,6 +55,16 @@ CREATE TABLE "characters" (
 	"description" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "collaboration_requests" (
+	"novel_id" uuid NOT NULL,
+	"user_id" uuid NOT NULL,
+	"message" text,
+	"status" "collaboration_request_status" DEFAULT 'pending' NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"responded_at" timestamp,
+	CONSTRAINT "collaboration_requests_novel_id_user_id_pk" PRIMARY KEY("novel_id","user_id")
 );
 --> statement-breakpoint
 CREATE TABLE "collaborators" (
@@ -247,6 +258,8 @@ ALTER TABLE "ai_usage" ADD CONSTRAINT "ai_usage_novel_id_novels_id_fk" FOREIGN K
 ALTER TABLE "character_developments" ADD CONSTRAINT "character_developments_character_id_characters_id_fk" FOREIGN KEY ("character_id") REFERENCES "public"."characters"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "character_fields" ADD CONSTRAINT "character_fields_character_id_characters_id_fk" FOREIGN KEY ("character_id") REFERENCES "public"."characters"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "characters" ADD CONSTRAINT "characters_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "collaboration_requests" ADD CONSTRAINT "collaboration_requests_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "collaboration_requests" ADD CONSTRAINT "collaboration_requests_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "collaborators" ADD CONSTRAINT "collaborators_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "collaborators" ADD CONSTRAINT "collaborators_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "commits" ADD CONSTRAINT "commits_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

@@ -1,5 +1,5 @@
 {
-  "id": "ccca875b-585b-4fdf-b1c9-0f978519c4f6",
+  "id": "37f716fb-5f13-437f-9d81-c98f312b24b0",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -430,6 +430,93 @@
         }
       },
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.collaboration_requests": {
+      "name": "collaboration_requests",
+      "schema": "",
+      "columns": {
+        "novel_id": {
+          "name": "novel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "message": {
+          "name": "message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "collaboration_request_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "responded_at": {
+          "name": "responded_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "collaboration_requests_novel_id_novels_id_fk": {
+          "name": "collaboration_requests_novel_id_novels_id_fk",
+          "tableFrom": "collaboration_requests",
+          "tableTo": "novels",
+          "columnsFrom": [
+            "novel_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "collaboration_requests_user_id_users_id_fk": {
+          "name": "collaboration_requests_user_id_users_id_fk",
+          "tableFrom": "collaboration_requests",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "collaboration_requests_novel_id_user_id_pk": {
+          "name": "collaboration_requests_novel_id_user_id_pk",
+          "columns": [
+            "novel_id",
+            "user_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -2224,6 +2311,15 @@
         "bl",
         "historical",
         "other"
+      ]
+    },
+    "public.collaboration_request_status": {
+      "name": "collaboration_request_status",
+      "schema": "public",
+      "values": [
+        "pending",
+        "accepted",
+        "rejected"
       ]
     },
     "public.issue_status": {

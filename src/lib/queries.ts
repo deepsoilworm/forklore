@@ -1,5 +1,6 @@
 import { db } from "@/db";
 import {
+  collaborationRequests,
   collaborators,
   episodeComments,
   novels,
@@ -87,6 +88,26 @@ export async function listCollaborators(novelId: string) {
     .innerJoin(users, eq(collaborators.userId, users.id))
     .where(eq(collaborators.novelId, novelId))
     .orderBy(asc(users.username));
+}
+
+export async function getMyCollaborationRequest(novelId: string, userId: string) {
+  const [row] = await db
+    .select()
+    .from(collaborationRequests)
+    .where(and(eq(collaborationRequests.novelId, novelId), eq(collaborationRequests.userId, userId)))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function listPendingCollaborationRequests(novelId: string) {
+  return db
+    .select({ request: collaborationRequests, user: users })
+    .from(collaborationRequests)
+    .innerJoin(users, eq(collaborationRequests.userId, users.id))
+    .where(
+      and(eq(collaborationRequests.novelId, novelId), eq(collaborationRequests.status, "pending")),
+    )
+    .orderBy(asc(collaborationRequests.createdAt));
 }
 
 export async function getCollaboratorRole(novelId: string, userId: string) {
