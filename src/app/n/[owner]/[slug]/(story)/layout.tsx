@@ -28,6 +28,7 @@ export default async function NovelLayout({
     { href: `${base}/commits`, label: "커밋" },
     { href: `${base}/branches`, label: "브랜치" },
     { href: `${base}/pulls`, label: "풀 리퀘스트" },
+    { href: `${base}/issues`, label: "이슈" },
     ...(found.novel.ownerId === session?.user?.id
       ? [{ href: `${base}/collaborators`, label: "협업자" }]
       : []),

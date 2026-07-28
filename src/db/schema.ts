@@ -220,6 +220,44 @@ export const prComments = pgTable("pr_comments", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const issueStatusEnum = pgEnum("issue_status", ["open", "closed"]);
+
+export const issues = pgTable(
+  "issues",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    novelId: uuid("novel_id")
+      .notNull()
+      .references(() => novels.id, { onDelete: "cascade" }),
+    number: integer("number").notNull(),
+    title: text("title").notNull(),
+    body: text("body"),
+    status: issueStatusEnum("status").notNull().default("open"),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    closedAt: timestamp("closed_at"),
+  },
+  (t) => [
+    uniqueIndex("issue_novel_number_idx").on(t.novelId, t.number),
+    index("issue_novel_status_idx").on(t.novelId, t.status),
+  ],
+);
+
+export const issueComments = pgTable("issue_comments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  issueId: uuid("issue_id")
+    .notNull()
+    .references(() => issues.id, { onDelete: "cascade" }),
+  authorId: uuid("author_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const stars = pgTable(
   "stars",
   {
