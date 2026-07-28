@@ -116,7 +116,10 @@ export function RichTextEditor({
     editorProps: {
       attributes: {
         class:
-          "prose prose-neutral dark:prose-invert max-w-none min-h-[28rem] text-base leading-8 focus:outline-none",
+          // Looser leading-8 belongs to the published reading view, not
+          // the editor — while actively writing, that much space between
+          // lines within a paragraph reads as broken, not spacious.
+          "prose prose-neutral dark:prose-invert max-w-none min-h-[28rem] text-base leading-7 focus:outline-none",
       },
     },
   });

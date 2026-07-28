@@ -40,9 +40,15 @@ export function ChapterEditorForm({
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => {
+            // A single-line input submits its form on Enter by default —
+            // fine for the commit-message field below, but not while
+            // naming a chapter (IME confirmation also fires this).
+            if (e.key === "Enter") e.preventDefault();
+          }}
           required
           placeholder="제목 없음"
-          className="border-none bg-transparent px-0 py-2 text-4xl font-bold tracking-tight text-foreground outline-none placeholder:text-muted-foreground/40"
+          className="mb-6 border-none bg-transparent px-0 py-2 text-4xl font-bold tracking-tight text-foreground outline-none placeholder:text-muted-foreground/40"
         />
 
         <RichTextEditor
