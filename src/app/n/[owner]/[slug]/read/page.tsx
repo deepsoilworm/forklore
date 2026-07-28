@@ -32,35 +32,37 @@ export default async function ReadNovelPage({
   const base = `/n/${owner}/${slug}`;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <BranchSwitcher branches={branches} current={branch} />
         <Badge variant="secondary">{episodes.length}화 연재 중</Badge>
       </div>
 
       {readme && (
-        <header className="flex flex-col gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">{found.novel.name}</h1>
+        <header className="flex flex-col gap-3 border-b pb-8">
+          <h1 className="text-3xl font-semibold tracking-tight">{found.novel.name}</h1>
           <Markdown content={readme} />
         </header>
       )}
 
-      <div className="rounded-md border">
-        <div className="border-b bg-muted/40 px-4 py-2 text-sm font-medium">목차</div>
+      <div className="flex flex-col gap-2">
+        <h2 className="px-1 text-sm font-medium text-muted-foreground">목차</h2>
         {episodes.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">
+          <p className="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
             아직 연재된 회차가 없어요.
           </p>
         ) : (
-          <ul className="divide-y">
+          <ul className="flex flex-col gap-1.5">
             {episodes.map((ep) => (
               <li key={ep.path}>
                 <Link
                   href={`${base}/read/${encodeURIComponent(ep.file)}?branch=${encodeURIComponent(branch)}`}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-accent/50"
+                  className="flex items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors hover:border-foreground/20 hover:bg-accent/50"
                 >
-                  <span className="text-muted-foreground">{ep.index}화</span>
-                  <span>{ep.title}</span>
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
+                    {ep.index}
+                  </span>
+                  <span className="font-medium">{ep.title}</span>
                 </Link>
               </li>
             ))}
@@ -69,13 +71,16 @@ export default async function ReadNovelPage({
       </div>
 
       {episodes.length > 0 && (
-        <article className="flex flex-col gap-12">
-          {episodes.map((ep) => (
-            <section key={ep.path} id={`ep-${ep.index}`} className="flex flex-col gap-4">
-              <h2 className="text-xl font-semibold tracking-tight">
-                {ep.index}화 — {ep.title}
-              </h2>
-              <Markdown content={ep.content} />
+        <article className="flex flex-col">
+          {episodes.map((ep, i) => (
+            <section key={ep.path} id={`ep-${ep.index}`} className="flex flex-col gap-6">
+              {i > 0 && (
+                <div className="flex items-center justify-center py-10 text-muted-foreground/50">
+                  · · ·
+                </div>
+              )}
+              <p className="text-sm font-medium text-muted-foreground">{ep.index}화</p>
+              <Markdown content={ep.content} size="reading" />
             </section>
           ))}
         </article>

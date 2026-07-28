@@ -1,5 +1,12 @@
 import { put, head, del } from "@vercel/blob";
-import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
+import {
+  mkdtemp,
+  rm,
+  mkdir,
+  writeFile,
+  readFile,
+  stat,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import * as tar from "tar";
@@ -13,9 +20,20 @@ import * as tar from "tar";
 //   5. releases the lock
 // This keeps git itself as the source of truth for history/diff/merge
 // instead of reinventing that logic on top of Postgres rows.
+//
+// Without BLOB_READ_WRITE_TOKEN (e.g. local dev before Blob is
+// provisioned), bundles are kept on local disk instead. Production always
+// has the token set via Vercel, so this path never runs there.
+
+const useLocalStore = !process.env.BLOB_READ_WRITE_TOKEN;
+const LOCAL_STORE_DIR = path.join(process.cwd(), ".local-blob", "repos");
 
 function blobKey(novelId: string) {
   return `repos/${novelId}.tar`;
+}
+
+function localBundlePath(novelId: string) {
+  return path.join(LOCAL_STORE_DIR, `${novelId}.tar`);
 }
 
 export async function checkoutScratchDir(novelId: string): Promise<{
@@ -24,6 +42,14 @@ export async function checkoutScratchDir(novelId: string): Promise<{
 }> {
   const dir = await mkdtemp(path.join(tmpdir(), `forklore-${novelId}-`));
   await mkdir(dir, { recursive: true });
+
+  if (useLocalStore) {
+    const bundlePath = localBundlePath(novelId);
+    const exists = await stat(bundlePath).catch(() => null);
+    if (!exists) return { dir, isNew: true };
+    await tar.extract({ file: bundlePath, cwd: dir });
+    return { dir, isNew: false };
+  }
 
   const existing = await head(blobKey(novelId)).catch(() => null);
   if (!existing) {
@@ -43,6 +69,12 @@ export async function checkoutScratchDir(novelId: string): Promise<{
 }
 
 export async function persistScratchDir(novelId: string, dir: string) {
+  if (useLocalStore) {
+    await mkdir(LOCAL_STORE_DIR, { recursive: true });
+    await tar.create({ cwd: dir, file: localBundlePath(novelId) }, ["."]);
+    return;
+  }
+
   const tarPath = path.join(tmpdir(), `forklore-${novelId}-out.tar`);
   await tar.create({ cwd: dir, file: tarPath }, ["."]);
 
@@ -60,5 +92,9 @@ export async function discardScratchDir(dir: string) {
 }
 
 export async function deleteRepoBundle(novelId: string) {
+  if (useLocalStore) {
+    await rm(localBundlePath(novelId), { force: true });
+    return;
+  }
   await del(blobKey(novelId)).catch(() => {});
 }

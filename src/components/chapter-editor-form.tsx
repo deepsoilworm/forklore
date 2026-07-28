@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AiAssistPanel } from "@/components/ai-assist-panel";
+import { Markdown } from "@/components/markdown";
 import { commitChapterAction } from "@/lib/actions/chapters";
 
 export function ChapterEditorForm({
@@ -26,6 +28,7 @@ export function ChapterEditorForm({
   initialContent: string;
 }) {
   const [content, setContent] = useState(initialContent);
+  const charCount = content.replace(/\s/g, "").length;
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
@@ -44,17 +47,44 @@ export function ChapterEditorForm({
             readOnly={Boolean(path)}
           />
         </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="content">본문 (Markdown)</Label>
-          <Textarea
-            id="content"
-            name="content"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            rows={20}
-            className="font-mono"
-          />
-        </div>
+
+        <Tabs defaultValue="write">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="content">본문 (Markdown)</Label>
+            <TabsList>
+              <TabsTrigger value="write">쓰기</TabsTrigger>
+              <TabsTrigger value="preview">미리보기</TabsTrigger>
+            </TabsList>
+          </div>
+          <TabsContent value="write">
+            <Textarea
+              id="content"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={24}
+              className="min-h-[32rem] resize-y text-base leading-8"
+            />
+            <p className="mt-1.5 text-right text-xs text-muted-foreground">
+              공백 제외 {charCount.toLocaleString()}자
+            </p>
+          </TabsContent>
+          <TabsContent value="preview">
+            <div className="min-h-[32rem] rounded-md border px-4 py-3">
+              {content.trim() ? (
+                <Markdown content={content} size="reading" />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  본문을 입력하면 여기에 미리보기가 표시돼요.
+                </p>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* Tabs unmount inactive panels, so the textarea may not be in the DOM at
+            submit time — this hidden field is the single source of truth for content. */}
+        <input type="hidden" name="content" value={content} />
+
         <div className="flex flex-col gap-2">
           <Label htmlFor="message">커밋 메시지</Label>
           <Input

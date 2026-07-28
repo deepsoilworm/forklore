@@ -37,6 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local dev fallback for Vercel Blob (see src/lib/git/repo-store.ts)
+/.local-blob
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

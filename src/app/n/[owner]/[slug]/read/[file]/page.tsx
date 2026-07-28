@@ -38,9 +38,12 @@ export default async function ReadEpisodePage({
   const branchQuery = `branch=${encodeURIComponent(branch)}`;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href={`${base}/read?${branchQuery}`} className="text-sm text-muted-foreground hover:underline">
+        <Link
+          href={`${base}/read?${branchQuery}`}
+          className="text-sm text-muted-foreground hover:text-foreground"
+        >
           ← 목차로
         </Link>
         {writable && (
@@ -60,19 +63,18 @@ export default async function ReadEpisodePage({
       </div>
 
       <article className="flex flex-col gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {episode.index}화 — {episode.title}
-        </h1>
-        <Markdown content={episode.content} />
+        <p className="text-sm font-medium text-muted-foreground">{episode.index}화</p>
+        <Markdown content={episode.content} size="reading" />
       </article>
 
-      <nav className="flex items-center justify-between border-t pt-4 text-sm">
+      <nav className="grid grid-cols-2 gap-3 border-t pt-6 text-sm">
         {prev ? (
           <Link
             href={`${base}/read/${encodeURIComponent(prev.file)}?${branchQuery}`}
-            className="hover:underline"
+            className="flex flex-col gap-0.5 rounded-lg border px-3 py-2.5 transition-colors hover:border-foreground/20 hover:bg-accent/50"
           >
-            ← {prev.index}화 {prev.title}
+            <span className="text-xs text-muted-foreground">← 이전화</span>
+            <span className="font-medium">{prev.title}</span>
           </Link>
         ) : (
           <span />
@@ -80,9 +82,10 @@ export default async function ReadEpisodePage({
         {next ? (
           <Link
             href={`${base}/read/${encodeURIComponent(next.file)}?${branchQuery}`}
-            className="hover:underline"
+            className="flex flex-col items-end gap-0.5 rounded-lg border px-3 py-2.5 text-right transition-colors hover:border-foreground/20 hover:bg-accent/50"
           >
-            {next.index}화 {next.title} →
+            <span className="text-xs text-muted-foreground">다음화 →</span>
+            <span className="font-medium">{next.title}</span>
           </Link>
         ) : (
           <span />
