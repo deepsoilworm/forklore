@@ -1,6 +1,16 @@
 import { db } from "@/db";
-import { collaborators, novels, pullRequests, users } from "@/db/schema";
-import { and, desc, eq, or } from "drizzle-orm";
+import {
+  collaborators,
+  episodeComments,
+  novels,
+  pollOptions,
+  polls,
+  pollVotes,
+  pullRequests,
+  stars,
+  users,
+} from "@/db/schema";
+import { and, asc, desc, eq, ne, or } from "drizzle-orm";
 
 export async function getNovelByOwnerSlug(owner: string, slug: string) {
   const rows = await db
@@ -30,6 +40,31 @@ export async function listPublicNovels(opts?: {
     )
     .orderBy(desc(novels.updatedAt))
     .limit(opts?.limit ?? 20);
+}
+
+export async function isStarredByUser(novelId: string, userId: string | null) {
+  if (!userId) return false;
+  const [row] = await db
+    .select()
+    .from(stars)
+    .where(and(eq(stars.novelId, novelId), eq(stars.userId, userId)))
+    .limit(1);
+  return Boolean(row);
+}
+
+export async function listOtherNovelsByOwner(ownerId: string, excludeNovelId: string, limit = 6) {
+  return db
+    .select({ novel: novels })
+    .from(novels)
+    .where(
+      and(
+        eq(novels.ownerId, ownerId),
+        eq(novels.visibility, "public"),
+        ne(novels.id, excludeNovelId),
+      ),
+    )
+    .orderBy(desc(novels.updatedAt))
+    .limit(limit);
 }
 
 export async function listNovelsForUser(userId: string) {
@@ -85,4 +120,57 @@ export async function getPullRequest(novelId: string, number: number) {
     .where(and(eq(pullRequests.novelId, novelId), eq(pullRequests.number, number)))
     .limit(1);
   return row ?? null;
+}
+
+export async function listEpisodeComments(novelId: string, episodePath: string) {
+  return db
+    .select({ comment: episodeComments, author: users })
+    .from(episodeComments)
+    .innerJoin(users, eq(episodeComments.authorId, users.id))
+    .where(
+      and(eq(episodeComments.novelId, novelId), eq(episodeComments.episodePath, episodePath)),
+    )
+    .orderBy(asc(episodeComments.createdAt));
+}
+
+export type PollWithResults = {
+  poll: typeof polls.$inferSelect;
+  options: { option: typeof pollOptions.$inferSelect; votes: number }[];
+  totalVotes: number;
+  myOptionId: string | null;
+};
+
+export async function getEpisodePoll(
+  novelId: string,
+  episodePath: string,
+  userId: string | null,
+): Promise<PollWithResults | null> {
+  const [poll] = await db
+    .select()
+    .from(polls)
+    .where(and(eq(polls.novelId, novelId), eq(polls.episodePath, episodePath)))
+    .limit(1);
+  if (!poll) return null;
+
+  const options = await db
+    .select()
+    .from(pollOptions)
+    .where(eq(pollOptions.pollId, poll.id))
+    .orderBy(asc(pollOptions.order));
+
+  const votes = await db.select().from(pollVotes).where(eq(pollVotes.pollId, poll.id));
+  const voteCounts = new Map<string, number>();
+  for (const v of votes) voteCounts.set(v.optionId, (voteCounts.get(v.optionId) ?? 0) + 1);
+
+  const myVote = userId ? votes.find((v) => v.userId === userId) : undefined;
+
+  return {
+    poll,
+    options: options.map((option) => ({
+      option,
+      votes: voteCounts.get(option.id) ?? 0,
+    })),
+    totalVotes: votes.length,
+    myOptionId: myVote?.optionId ?? null,
+  };
 }

@@ -3,6 +3,7 @@ CREATE TYPE "public"."language" AS ENUM('ko', 'en', 'ja', 'other');--> statement
 CREATE TYPE "public"."plan" AS ENUM('free', 'pro');--> statement-breakpoint
 CREATE TYPE "public"."pr_status" AS ENUM('open', 'merged', 'closed');--> statement-breakpoint
 CREATE TYPE "public"."collaborator_role" AS ENUM('owner', 'maintainer', 'writer', 'reader');--> statement-breakpoint
+CREATE TYPE "public"."story_status" AS ENUM('ongoing', 'completed', 'hiatus');--> statement-breakpoint
 CREATE TYPE "public"."visibility" AS ENUM('public', 'private');--> statement-breakpoint
 CREATE TABLE "accounts" (
 	"user_id" uuid NOT NULL,
@@ -47,6 +48,15 @@ CREATE TABLE "commits" (
 	CONSTRAINT "commits_novel_id_sha_pk" PRIMARY KEY("novel_id","sha")
 );
 --> statement-breakpoint
+CREATE TABLE "episode_comments" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"novel_id" uuid NOT NULL,
+	"episode_path" text NOT NULL,
+	"author_id" uuid NOT NULL,
+	"body" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "novels" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"slug" text NOT NULL,
@@ -56,6 +66,7 @@ CREATE TABLE "novels" (
 	"visibility" "visibility" DEFAULT 'public' NOT NULL,
 	"category" "category" DEFAULT 'other' NOT NULL,
 	"language" "language" DEFAULT 'ko' NOT NULL,
+	"status" "story_status" DEFAULT 'ongoing' NOT NULL,
 	"default_branch" text DEFAULT 'main' NOT NULL,
 	"blob_url" text,
 	"blob_pathname" text,
@@ -64,6 +75,30 @@ CREATE TABLE "novels" (
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "novels_slug_unique" UNIQUE("slug")
+);
+--> statement-breakpoint
+CREATE TABLE "poll_options" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"poll_id" uuid NOT NULL,
+	"label" text NOT NULL,
+	"order" integer DEFAULT 0 NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "poll_votes" (
+	"poll_id" uuid NOT NULL,
+	"option_id" uuid NOT NULL,
+	"user_id" uuid NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "poll_votes_poll_id_user_id_pk" PRIMARY KEY("poll_id","user_id")
+);
+--> statement-breakpoint
+CREATE TABLE "polls" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"novel_id" uuid NOT NULL,
+	"episode_path" text NOT NULL,
+	"question" text NOT NULL,
+	"author_id" uuid NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "pr_comments" (
@@ -141,7 +176,15 @@ ALTER TABLE "collaborators" ADD CONSTRAINT "collaborators_novel_id_novels_id_fk"
 ALTER TABLE "collaborators" ADD CONSTRAINT "collaborators_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "commits" ADD CONSTRAINT "commits_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "commits" ADD CONSTRAINT "commits_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "episode_comments" ADD CONSTRAINT "episode_comments_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "episode_comments" ADD CONSTRAINT "episode_comments_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "novels" ADD CONSTRAINT "novels_owner_id_users_id_fk" FOREIGN KEY ("owner_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "poll_options" ADD CONSTRAINT "poll_options_poll_id_polls_id_fk" FOREIGN KEY ("poll_id") REFERENCES "public"."polls"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "poll_votes" ADD CONSTRAINT "poll_votes_poll_id_polls_id_fk" FOREIGN KEY ("poll_id") REFERENCES "public"."polls"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "poll_votes" ADD CONSTRAINT "poll_votes_option_id_poll_options_id_fk" FOREIGN KEY ("option_id") REFERENCES "public"."poll_options"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "poll_votes" ADD CONSTRAINT "poll_votes_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "polls" ADD CONSTRAINT "polls_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "polls" ADD CONSTRAINT "polls_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pr_comments" ADD CONSTRAINT "pr_comments_pull_request_id_pull_requests_id_fk" FOREIGN KEY ("pull_request_id") REFERENCES "public"."pull_requests"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pr_comments" ADD CONSTRAINT "pr_comments_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pull_requests" ADD CONSTRAINT "pull_requests_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -151,7 +194,10 @@ ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_users_id_fk" FOREIGN KEY
 ALTER TABLE "stars" ADD CONSTRAINT "stars_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "stars" ADD CONSTRAINT "stars_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "commits_novel_branch_idx" ON "commits" USING btree ("novel_id","branch");--> statement-breakpoint
+CREATE INDEX "episode_comments_lookup_idx" ON "episode_comments" USING btree ("novel_id","episode_path");--> statement-breakpoint
 CREATE INDEX "novels_owner_idx" ON "novels" USING btree ("owner_id");--> statement-breakpoint
+CREATE INDEX "poll_options_poll_idx" ON "poll_options" USING btree ("poll_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "polls_episode_idx" ON "polls" USING btree ("novel_id","episode_path");--> statement-breakpoint
 CREATE UNIQUE INDEX "pr_novel_number_idx" ON "pull_requests" USING btree ("novel_id","number");--> statement-breakpoint
 CREATE INDEX "pr_novel_status_idx" ON "pull_requests" USING btree ("novel_id","status");--> statement-breakpoint
 CREATE INDEX "refs_novel_idx" ON "refs" USING btree ("novel_id");

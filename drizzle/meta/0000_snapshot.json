@@ -1,5 +1,5 @@
 {
-  "id": "16110379-9a75-41ba-9b8f-c12350e7e7c0",
+  "id": "7aa2a4b6-71d6-405e-ae9f-80671b73aeb2",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -373,6 +373,106 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.episode_comments": {
+      "name": "episode_comments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "novel_id": {
+          "name": "novel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "episode_path": {
+          "name": "episode_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "author_id": {
+          "name": "author_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "episode_comments_lookup_idx": {
+          "name": "episode_comments_lookup_idx",
+          "columns": [
+            {
+              "expression": "novel_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "episode_path",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "episode_comments_novel_id_novels_id_fk": {
+          "name": "episode_comments_novel_id_novels_id_fk",
+          "tableFrom": "episode_comments",
+          "tableTo": "novels",
+          "columnsFrom": [
+            "novel_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "episode_comments_author_id_users_id_fk": {
+          "name": "episode_comments_author_id_users_id_fk",
+          "tableFrom": "episode_comments",
+          "tableTo": "users",
+          "columnsFrom": [
+            "author_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.novels": {
       "name": "novels",
       "schema": "",
@@ -431,6 +531,14 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'ko'"
+        },
+        "status": {
+          "name": "status",
+          "type": "story_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'ongoing'"
         },
         "default_branch": {
           "name": "default_branch",
@@ -521,6 +629,261 @@
           ]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.poll_options": {
+      "name": "poll_options",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "poll_id": {
+          "name": "poll_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {
+        "poll_options_poll_idx": {
+          "name": "poll_options_poll_idx",
+          "columns": [
+            {
+              "expression": "poll_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "poll_options_poll_id_polls_id_fk": {
+          "name": "poll_options_poll_id_polls_id_fk",
+          "tableFrom": "poll_options",
+          "tableTo": "polls",
+          "columnsFrom": [
+            "poll_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.poll_votes": {
+      "name": "poll_votes",
+      "schema": "",
+      "columns": {
+        "poll_id": {
+          "name": "poll_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "option_id": {
+          "name": "option_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "poll_votes_poll_id_polls_id_fk": {
+          "name": "poll_votes_poll_id_polls_id_fk",
+          "tableFrom": "poll_votes",
+          "tableTo": "polls",
+          "columnsFrom": [
+            "poll_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "poll_votes_option_id_poll_options_id_fk": {
+          "name": "poll_votes_option_id_poll_options_id_fk",
+          "tableFrom": "poll_votes",
+          "tableTo": "poll_options",
+          "columnsFrom": [
+            "option_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "poll_votes_user_id_users_id_fk": {
+          "name": "poll_votes_user_id_users_id_fk",
+          "tableFrom": "poll_votes",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "poll_votes_poll_id_user_id_pk": {
+          "name": "poll_votes_poll_id_user_id_pk",
+          "columns": [
+            "poll_id",
+            "user_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.polls": {
+      "name": "polls",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "novel_id": {
+          "name": "novel_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "episode_path": {
+          "name": "episode_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "question": {
+          "name": "question",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "author_id": {
+          "name": "author_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "polls_episode_idx": {
+          "name": "polls_episode_idx",
+          "columns": [
+            {
+              "expression": "novel_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "episode_path",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "polls_novel_id_novels_id_fk": {
+          "name": "polls_novel_id_novels_id_fk",
+          "tableFrom": "polls",
+          "tableTo": "novels",
+          "columnsFrom": [
+            "novel_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "polls_author_id_users_id_fk": {
+          "name": "polls_author_id_users_id_fk",
+          "tableFrom": "polls",
+          "tableTo": "users",
+          "columnsFrom": [
+            "author_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -1141,6 +1504,15 @@
         "maintainer",
         "writer",
         "reader"
+      ]
+    },
+    "public.story_status": {
+      "name": "story_status",
+      "schema": "public",
+      "values": [
+        "ongoing",
+        "completed",
+        "hiatus"
       ]
     },
     "public.visibility": {

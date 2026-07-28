@@ -17,3 +17,9 @@ export const LANGUAGE_LABELS: Record<string, string> = {
   ja: "日本語",
   other: "기타",
 };
+
+export const STATUS_LABELS: Record<string, string> = {
+  ongoing: "연재중",
+  completed: "완결",
+  hiatus: "휴재",
+};

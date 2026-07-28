@@ -5,6 +5,8 @@ import { canWrite, getNovelByOwnerSlug } from "@/lib/queries";
 import { listEpisodes } from "@/lib/git/novel-repo";
 import { Markdown } from "@/components/markdown";
 import { Button } from "@/components/ui/button";
+import { EpisodePoll } from "@/components/episode-poll";
+import { EpisodeComments } from "@/components/episode-comments";
 
 export default async function ReadEpisodePage({
   params,
@@ -67,6 +69,13 @@ export default async function ReadEpisodePage({
         <Markdown content={episode.content} size="reading" />
       </article>
 
+      <EpisodePoll
+        owner={owner}
+        slug={slug}
+        novelId={found.novel.id}
+        episodePath={episode.path}
+      />
+
       <nav className="grid grid-cols-2 gap-3 border-t pt-6 text-sm">
         {prev ? (
           <Link
@@ -91,6 +100,15 @@ export default async function ReadEpisodePage({
           <span />
         )}
       </nav>
+
+      <div className="border-t pt-6">
+        <EpisodeComments
+          owner={owner}
+          slug={slug}
+          novelId={found.novel.id}
+          episodePath={episode.path}
+        />
+      </div>
     </div>
   );
 }

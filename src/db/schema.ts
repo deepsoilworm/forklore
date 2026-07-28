@@ -33,6 +33,11 @@ export const categoryEnum = pgEnum("category", [
   "other",
 ]);
 export const languageEnum = pgEnum("language", ["ko", "en", "ja", "other"]);
+export const storyStatusEnum = pgEnum("story_status", [
+  "ongoing",
+  "completed",
+  "hiatus",
+]);
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -106,6 +111,7 @@ export const novels = pgTable(
     visibility: visibilityEnum("visibility").notNull().default("public"),
     category: categoryEnum("category").notNull().default("other"),
     language: languageEnum("language").notNull().default("ko"),
+    status: storyStatusEnum("status").notNull().default("ongoing"),
     defaultBranch: text("default_branch").notNull().default("main"),
     // Pointer to the packed git bundle in Vercel Blob storage.
     blobUrl: text("blob_url"),
@@ -226,6 +232,76 @@ export const stars = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.novelId, t.userId] })],
+);
+
+// Reader comments on a specific episode. Keyed by file path rather than a
+// git blob/commit sha, so comments stay attached to "chapter 3" across
+// edits — if the file is renamed they're orphaned, which is an acceptable
+// MVP tradeoff since chapter paths rarely change once published.
+export const episodeComments = pgTable(
+  "episode_comments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    novelId: uuid("novel_id")
+      .notNull()
+      .references(() => novels.id, { onDelete: "cascade" }),
+    episodePath: text("episode_path").notNull(),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("episode_comments_lookup_idx").on(t.novelId, t.episodePath)],
+);
+
+// Author-created "what happens next" polls attached to an episode. One poll
+// per episode for MVP simplicity.
+export const polls = pgTable(
+  "polls",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    novelId: uuid("novel_id")
+      .notNull()
+      .references(() => novels.id, { onDelete: "cascade" }),
+    episodePath: text("episode_path").notNull(),
+    question: text("question").notNull(),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("polls_episode_idx").on(t.novelId, t.episodePath)],
+);
+
+export const pollOptions = pgTable(
+  "poll_options",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    pollId: uuid("poll_id")
+      .notNull()
+      .references(() => polls.id, { onDelete: "cascade" }),
+    label: text("label").notNull(),
+    order: integer("order").notNull().default(0),
+  },
+  (t) => [index("poll_options_poll_idx").on(t.pollId)],
+);
+
+export const pollVotes = pgTable(
+  "poll_votes",
+  {
+    pollId: uuid("poll_id")
+      .notNull()
+      .references(() => polls.id, { onDelete: "cascade" }),
+    optionId: uuid("option_id")
+      .notNull()
+      .references(() => pollOptions.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.pollId, t.userId] })],
 );
 
 // AI writing-assist usage, tracked per call so a future paid tier can meter it.
