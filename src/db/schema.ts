@@ -276,6 +276,23 @@ export const characterFields = pgTable(
   (t) => [index("character_fields_character_idx").on(t.characterId, t.order)],
 );
 
+// A "track" in the encounter timeline — a plot thread (main plot, a
+// subplot, a character's side arc, ...). Encounters unassigned to any
+// plot line just render in a catch-all "미분류" row.
+export const plotLines = pgTable(
+  "plot_lines",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    novelId: uuid("novel_id")
+      .notNull()
+      .references(() => novels.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    order: integer("order").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("plot_lines_novel_idx").on(t.novelId, t.order)],
+);
+
 export const encounters = pgTable(
   "encounters",
   {
@@ -283,12 +300,18 @@ export const encounters = pgTable(
     novelId: uuid("novel_id")
       .notNull()
       .references(() => novels.id, { onDelete: "cascade" }),
+    plotLineId: uuid("plot_line_id").references(() => plotLines.id, {
+      onDelete: "set null",
+    }),
     title: text("title").notNull(),
     description: text("description"),
     order: integer("order").notNull().default(0),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
-  (t) => [index("encounters_novel_idx").on(t.novelId, t.order)],
+  (t) => [
+    index("encounters_novel_idx").on(t.novelId, t.order),
+    index("encounters_plot_line_idx").on(t.plotLineId, t.order),
+  ],
 );
 
 export const encounterParticipants = pgTable(

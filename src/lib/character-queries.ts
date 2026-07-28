@@ -5,8 +5,17 @@ import {
   characters,
   encounterParticipants,
   encounters,
+  plotLines,
 } from "@/db/schema";
 import { and, asc, eq, inArray } from "drizzle-orm";
+
+export async function listPlotLines(novelId: string) {
+  return db
+    .select()
+    .from(plotLines)
+    .where(eq(plotLines.novelId, novelId))
+    .orderBy(asc(plotLines.order));
+}
 
 export type CharacterWithFields = typeof characters.$inferSelect & {
   fields: (typeof characterFields.$inferSelect)[];

@@ -8,10 +8,11 @@ import {
   characters,
   encounterParticipants,
   encounters,
+  plotLines,
 } from "@/db/schema";
 import { canWrite, getNovelByOwnerSlug } from "@/lib/queries";
 import { getCharacter } from "@/lib/character-queries";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -83,6 +84,7 @@ const encounterSchema = z.object({
   slug: z.string(),
   title: z.string().min(1).max(150),
   description: z.string().max(2000).optional(),
+  plotLineId: z.string().uuid().optional(),
   order: z.coerce.number().int().optional(),
   participantIds: z.array(z.string().uuid()).min(1),
 });
@@ -96,6 +98,7 @@ export async function createEncounterAction(formData: FormData) {
     slug: formData.get("slug"),
     title: formData.get("title"),
     description: formData.get("description") || undefined,
+    plotLineId: formData.get("plotLineId") || undefined,
     order: formData.get("order") || undefined,
     participantIds: formData.getAll("participantIds"),
   });
@@ -111,6 +114,7 @@ export async function createEncounterAction(formData: FormData) {
       .insert(encounters)
       .values({
         novelId: found.novel.id,
+        plotLineId: parsed.plotLineId ?? null,
         title: parsed.title,
         description: parsed.description,
         order: parsed.order ?? 0,
@@ -127,6 +131,85 @@ export async function createEncounterAction(formData: FormData) {
 
   revalidatePath(`/n/${parsed.owner}/${parsed.slug}/encounters`);
   redirect(`/n/${parsed.owner}/${parsed.slug}/encounters`);
+}
+
+const plotLineSchema = z.object({
+  owner: z.string(),
+  slug: z.string(),
+  name: z.string().min(1).max(80),
+});
+
+export async function createPlotLineAction(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("로그인이 필요합니다");
+
+  const parsed = plotLineSchema.parse({
+    owner: formData.get("owner"),
+    slug: formData.get("slug"),
+    name: formData.get("name"),
+  });
+
+  const found = await getNovelByOwnerSlug(parsed.owner, parsed.slug);
+  if (!found) throw new Error("이야기를 찾을 수 없습니다");
+  if (!(await canWrite(found.novel, session.user.id))) {
+    throw new Error("쓰기 권한이 없습니다");
+  }
+
+  const existing = await db
+    .select()
+    .from(plotLines)
+    .where(eq(plotLines.novelId, found.novel.id));
+
+  await db.insert(plotLines).values({
+    novelId: found.novel.id,
+    name: parsed.name,
+    order: existing.length,
+  });
+
+  revalidatePath(`/n/${parsed.owner}/${parsed.slug}/encounters`);
+}
+
+// Called on drag-and-drop drop: persists the full ordered list of encounter
+// ids for whichever track the card was dropped into (including its new
+// plotLineId). The source track's remaining cards keep their old `order`
+// values — those don't need to be contiguous, only locally monotonic.
+export async function reorderEncountersAction(input: {
+  owner: string;
+  slug: string;
+  plotLineId: string | null;
+  orderedEncounterIds: string[];
+}) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("로그인이 필요합니다");
+
+  const found = await getNovelByOwnerSlug(input.owner, input.slug);
+  if (!found) throw new Error("이야기를 찾을 수 없습니다");
+  if (!(await canWrite(found.novel, session.user.id))) {
+    throw new Error("쓰기 권한이 없습니다");
+  }
+
+  await db.transaction(async (tx) => {
+    const rows = await tx
+      .select({ id: encounters.id })
+      .from(encounters)
+      .where(
+        and(eq(encounters.novelId, found.novel.id), inArray(encounters.id, input.orderedEncounterIds)),
+      );
+    const validIds = new Set(rows.map((r) => r.id));
+
+    await Promise.all(
+      input.orderedEncounterIds
+        .filter((id) => validIds.has(id))
+        .map((id, index) =>
+          tx
+            .update(encounters)
+            .set({ plotLineId: input.plotLineId, order: index })
+            .where(eq(encounters.id, id)),
+        ),
+    );
+  });
+
+  revalidatePath(`/n/${input.owner}/${input.slug}/encounters`);
 }
 
 const developmentSchema = z.object({

@@ -83,6 +83,7 @@ CREATE TABLE "encounter_participants" (
 CREATE TABLE "encounters" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"novel_id" uuid NOT NULL,
+	"plot_line_id" uuid,
 	"title" text NOT NULL,
 	"description" text,
 	"order" integer DEFAULT 0 NOT NULL,
@@ -116,6 +117,14 @@ CREATE TABLE "novels" (
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "novels_slug_unique" UNIQUE("slug")
+);
+--> statement-breakpoint
+CREATE TABLE "plot_lines" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"novel_id" uuid NOT NULL,
+	"name" text NOT NULL,
+	"order" integer DEFAULT 0 NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "poll_options" (
@@ -223,9 +232,11 @@ ALTER TABLE "commits" ADD CONSTRAINT "commits_author_id_users_id_fk" FOREIGN KEY
 ALTER TABLE "encounter_participants" ADD CONSTRAINT "encounter_participants_encounter_id_encounters_id_fk" FOREIGN KEY ("encounter_id") REFERENCES "public"."encounters"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "encounter_participants" ADD CONSTRAINT "encounter_participants_character_id_characters_id_fk" FOREIGN KEY ("character_id") REFERENCES "public"."characters"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "encounters" ADD CONSTRAINT "encounters_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "encounters" ADD CONSTRAINT "encounters_plot_line_id_plot_lines_id_fk" FOREIGN KEY ("plot_line_id") REFERENCES "public"."plot_lines"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "episode_comments" ADD CONSTRAINT "episode_comments_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "episode_comments" ADD CONSTRAINT "episode_comments_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "novels" ADD CONSTRAINT "novels_owner_id_users_id_fk" FOREIGN KEY ("owner_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "plot_lines" ADD CONSTRAINT "plot_lines_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "poll_options" ADD CONSTRAINT "poll_options_poll_id_polls_id_fk" FOREIGN KEY ("poll_id") REFERENCES "public"."polls"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "poll_votes" ADD CONSTRAINT "poll_votes_poll_id_polls_id_fk" FOREIGN KEY ("poll_id") REFERENCES "public"."polls"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "poll_votes" ADD CONSTRAINT "poll_votes_option_id_poll_options_id_fk" FOREIGN KEY ("option_id") REFERENCES "public"."poll_options"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -246,8 +257,10 @@ CREATE INDEX "characters_novel_idx" ON "characters" USING btree ("novel_id");-->
 CREATE INDEX "commits_novel_branch_idx" ON "commits" USING btree ("novel_id","branch");--> statement-breakpoint
 CREATE INDEX "encounter_participants_character_idx" ON "encounter_participants" USING btree ("character_id");--> statement-breakpoint
 CREATE INDEX "encounters_novel_idx" ON "encounters" USING btree ("novel_id","order");--> statement-breakpoint
+CREATE INDEX "encounters_plot_line_idx" ON "encounters" USING btree ("plot_line_id","order");--> statement-breakpoint
 CREATE INDEX "episode_comments_lookup_idx" ON "episode_comments" USING btree ("novel_id","episode_path");--> statement-breakpoint
 CREATE INDEX "novels_owner_idx" ON "novels" USING btree ("owner_id");--> statement-breakpoint
+CREATE INDEX "plot_lines_novel_idx" ON "plot_lines" USING btree ("novel_id","order");--> statement-breakpoint
 CREATE INDEX "poll_options_poll_idx" ON "poll_options" USING btree ("poll_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "polls_episode_idx" ON "polls" USING btree ("novel_id","episode_path");--> statement-breakpoint
 CREATE UNIQUE INDEX "pr_novel_number_idx" ON "pull_requests" USING btree ("novel_id","number");--> statement-breakpoint
