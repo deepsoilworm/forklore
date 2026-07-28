@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { canRead, getNovelByOwnerSlug, recordNovelVisit } from "@/lib/queries";
 import { ThinTopBar } from "@/components/thin-top-bar";
+import { StoryTabs } from "@/components/story-tabs";
 
 export default async function NovelLayout({
   children,
@@ -40,7 +41,13 @@ export default async function NovelLayout({
 
   return (
     <div className="flex min-h-full flex-col">
-      <ThinTopBar prefix={found.novel.name} items={tabs} />
+      <ThinTopBar prefix={found.novel.name} />
+      <div className="border-b px-4 pt-6 lg:px-8">
+        <h1 className="mb-4 truncate text-2xl font-semibold tracking-tight">
+          {found.novel.name}
+        </h1>
+        <StoryTabs items={tabs} />
+      </div>
       <main className="min-w-0 flex-1 px-4 py-8 lg:px-8">{children}</main>
     </div>
   );

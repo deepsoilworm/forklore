@@ -6,10 +6,10 @@ import { useSidebar } from "@/components/sidebar-context";
 
 export function ThinTopBar({
   prefix,
-  items,
+  items = [],
 }: {
   prefix?: string;
-  items: { href: string; label: string }[];
+  items?: { href: string; label: string }[];
 }) {
   const pathname = usePathname();
   const { collapsed, setCollapsed, setMobileOpen } = useSidebar();

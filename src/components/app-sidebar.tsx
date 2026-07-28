@@ -14,23 +14,8 @@ const MAIN_ITEMS = [
   { href: "/about", label: "오픈소스" },
 ];
 
-type StoryNavData = { name: string; owner: string; slug: string; isOwner: boolean };
 type SidebarNovelData = { id: string; name: string; owner: string; slug: string };
 type SidebarLists = { recent: SidebarNovelData[]; starred: SidebarNovelData[] };
-
-function storyTabs(base: string, isOwner: boolean) {
-  return [
-    { href: `${base}/read`, label: "읽기" },
-    { href: base, label: "코드" },
-    { href: `${base}/characters`, label: "인물" },
-    { href: `${base}/encounters`, label: "만남" },
-    { href: `${base}/commits`, label: "커밋" },
-    { href: `${base}/branches`, label: "브랜치" },
-    { href: `${base}/pulls`, label: "풀 리퀘스트" },
-    { href: `${base}/issues`, label: "이슈" },
-    ...(isOwner ? [{ href: `${base}/collaborators`, label: "협업자" }] : []),
-  ];
-}
 
 function isActive(pathname: string, href: string, exact: boolean) {
   return exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
@@ -117,33 +102,7 @@ export function AppSidebar({
 }) {
   const pathname = usePathname();
   const { collapsed, setCollapsed, mobileOpen, setMobileOpen } = useSidebar();
-  // Holds the most recently fetched story's nav data — never reset to null
-  // directly; `storyNav` below derives whether it's still relevant to the
-  // current route, so leaving a story hides it without a setState-in-effect.
-  const [fetchedStoryNav, setFetchedStoryNav] = useState<StoryNavData | null>(null);
   const [lists, setLists] = useState<SidebarLists>({ recent: [], starred: [] });
-
-  const storyMatch = pathname.match(/^\/n\/([^/]+)\/([^/]+)/);
-  const storyNav =
-    storyMatch && fetchedStoryNav?.owner === storyMatch[1] && fetchedStoryNav?.slug === storyMatch[2]
-      ? fetchedStoryNav
-      : null;
-
-  useEffect(() => {
-    if (!storyMatch) return;
-    const [, owner, slug] = storyMatch;
-
-    let cancelled = false;
-    fetch(`/api/story-nav?owner=${encodeURIComponent(owner)}&slug=${encodeURIComponent(slug)}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!cancelled && data) setFetchedStoryNav(data);
-      });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storyMatch?.[1], storyMatch?.[2]]);
 
   useEffect(() => {
     if (!session?.username) return;
@@ -232,25 +191,6 @@ export function AppSidebar({
           emptyHint="찜한 작품이 없어요"
           onNavigate={() => setMobileOpen(false)}
         />
-      )}
-
-      {storyNav && (
-        <div className="flex flex-col gap-1 border-t pt-4">
-          <span className="truncate px-2.5 text-xs font-medium text-muted-foreground">
-            {storyNav.name}
-          </span>
-          <nav className="flex flex-col gap-0.5">
-            {storyTabs(`/n/${storyNav.owner}/${storyNav.slug}`, storyNav.isOwner).map((tab) => (
-              <NavLink
-                key={tab.href}
-                href={tab.href}
-                label={tab.label}
-                active={isActive(pathname, tab.href, tab.href === `/n/${storyNav.owner}/${storyNav.slug}`)}
-                onNavigate={() => setMobileOpen(false)}
-              />
-            ))}
-          </nav>
-        </div>
       )}
 
       <div className="mt-auto">
