@@ -13,6 +13,7 @@ import { Markdown } from "@/components/markdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StatusSwitcher } from "@/components/status-switcher";
+import { CoverThumbnail } from "@/components/cover-thumbnail";
 import { stripLeadingHeading } from "@/lib/markdown-utils";
 import { CATEGORY_LABELS, LANGUAGE_LABELS, STATUS_LABELS } from "@/lib/labels";
 import { storyStatusEnum } from "@/db/schema";
@@ -57,9 +58,7 @@ export default async function ReadNovelPage({
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
       <div className="flex items-start gap-5">
-        <div className="flex aspect-4/5 w-24 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-muted to-muted/40 text-3xl font-bold text-muted-foreground sm:w-32 sm:text-4xl">
-          {found.novel.name.trim()[0]?.toUpperCase()}
-        </div>
+        <CoverThumbnail name={found.novel.name} />
         <div className="flex flex-1 flex-col gap-2 pt-1">
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge>{STATUS_LABELS[found.novel.status]}</Badge>

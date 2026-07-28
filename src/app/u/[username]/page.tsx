@@ -6,9 +6,10 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { canRead, listNovelsForUser } from "@/lib/queries";
 import { CATEGORY_LABELS, LANGUAGE_LABELS } from "@/lib/labels";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { CoverThumbnail } from "@/components/cover-thumbnail";
 
 export default async function UserProfilePage({
   params,
@@ -43,21 +44,25 @@ export default async function UserProfilePage({
         {novels.map(({ novel }) => (
           <Link key={novel.id} href={`/n/${username}/${novel.slug}/read`}>
             <Card className="h-full transition-colors hover:bg-accent/50">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between gap-2">
-                  <span>{novel.name}</span>
-                  <Badge variant={novel.visibility === "public" ? "secondary" : "outline"}>
-                    {novel.visibility === "public" ? "공개" : "비공개"}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="line-clamp-2 text-sm text-muted-foreground">
-                  {novel.description}
-                </p>
-                <div className="mt-2 flex gap-1">
-                  <Badge variant="outline">{CATEGORY_LABELS[novel.category]}</Badge>
-                  <Badge variant="outline">{LANGUAGE_LABELS[novel.language]}</Badge>
+              <CardContent className="flex gap-3">
+                <CoverThumbnail name={novel.name} size="small" />
+                <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate font-medium">{novel.name}</span>
+                    <Badge
+                      variant={novel.visibility === "public" ? "secondary" : "outline"}
+                      className="shrink-0"
+                    >
+                      {novel.visibility === "public" ? "공개" : "비공개"}
+                    </Badge>
+                  </div>
+                  <p className="line-clamp-2 text-sm text-muted-foreground">
+                    {novel.description}
+                  </p>
+                  <div className="mt-auto flex gap-1 pt-1">
+                    <Badge variant="outline">{CATEGORY_LABELS[novel.category]}</Badge>
+                    <Badge variant="outline">{LANGUAGE_LABELS[novel.language]}</Badge>
+                  </div>
                 </div>
               </CardContent>
             </Card>

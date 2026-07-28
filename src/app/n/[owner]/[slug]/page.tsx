@@ -9,6 +9,7 @@ import {
 } from "@/lib/git/novel-repo";
 import { Button } from "@/components/ui/button";
 import { BranchSwitcher } from "@/components/branch-switcher";
+import { CopyRepoAddress } from "@/components/copy-repo-address";
 
 export default async function NovelOverviewPage({
   params,
@@ -42,7 +43,10 @@ export default async function NovelOverviewPage({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <BranchSwitcher branches={branches} current={branch} />
+        <div className="flex flex-wrap items-center gap-3">
+          <BranchSwitcher branches={branches} current={branch} />
+          <CopyRepoAddress path={base} />
+        </div>
         {writable && (
           <Button
             size="sm"

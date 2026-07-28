@@ -17,6 +17,22 @@ export async function SiteHeader() {
           Forklore
         </Link>
         <nav className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            nativeButton={false}
+            render={<Link href="/docs" />}
+          >
+            가이드
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            nativeButton={false}
+            render={<Link href="/about" />}
+          >
+            오픈소스
+          </Button>
           {session?.user ? (
             <>
               <Button

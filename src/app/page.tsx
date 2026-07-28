@@ -4,8 +4,9 @@ import { listPublicNovels } from "@/lib/queries";
 import { categoryEnum } from "@/db/schema";
 import { CATEGORY_LABELS, LANGUAGE_LABELS } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { CoverThumbnail } from "@/components/cover-thumbnail";
 import { formatDistanceToNow } from "date-fns";
 
 export default async function Home({
@@ -41,18 +42,8 @@ export default async function Home({
           >
             {session?.user ? "새 이야기 시작하기" : "GitHub로 시작하기"}
           </Button>
-          <Button
-            variant="outline"
-            nativeButton={false}
-            render={
-              <a
-                href="https://github.com/deepsoilworm/forklore"
-                target="_blank"
-                rel="noopener noreferrer"
-              />
-            }
-          >
-            GitHub에서 보기
+          <Button variant="outline" nativeButton={false} render={<Link href="/about" />}>
+            오픈소스 프로젝트예요
           </Button>
         </div>
       </section>
@@ -82,25 +73,24 @@ export default async function Home({
             {novels.map(({ novel, owner }) => (
               <Link key={novel.id} href={`/n/${owner.username}/${novel.slug}/read`}>
                 <Card className="h-full transition-colors hover:bg-accent/50">
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between gap-2">
-                      <span>{novel.name}</span>
-                      <Badge variant="secondary">
-                        {formatDistanceToNow(novel.updatedAt, {
-                          addSuffix: true,
-                        })}
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="line-clamp-2 text-sm text-muted-foreground">
-                      {novel.description}
-                    </p>
-                    <div className="mt-2 flex items-center justify-between">
-                      <p className="text-xs text-muted-foreground">@{owner.username}</p>
-                      <div className="flex gap-1">
-                        <Badge variant="outline">{CATEGORY_LABELS[novel.category]}</Badge>
-                        <Badge variant="outline">{LANGUAGE_LABELS[novel.language]}</Badge>
+                  <CardContent className="flex gap-3">
+                    <CoverThumbnail name={novel.name} size="small" />
+                    <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate font-medium">{novel.name}</span>
+                        <Badge variant="secondary" className="shrink-0">
+                          {formatDistanceToNow(novel.updatedAt, { addSuffix: true })}
+                        </Badge>
+                      </div>
+                      <p className="line-clamp-2 text-sm text-muted-foreground">
+                        {novel.description}
+                      </p>
+                      <div className="mt-auto flex items-center justify-between pt-1">
+                        <p className="text-xs text-muted-foreground">@{owner.username}</p>
+                        <div className="flex gap-1">
+                          <Badge variant="outline">{CATEGORY_LABELS[novel.category]}</Badge>
+                          <Badge variant="outline">{LANGUAGE_LABELS[novel.language]}</Badge>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
