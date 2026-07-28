@@ -207,6 +207,35 @@ export async function listEpisodes(opts: {
   }
 }
 
+export type MarkdownEntry = { path: string; file: string; content: string };
+
+// Generic "list every .md file under a prefix, with its content" — used for
+// any file-per-item collection (characters/, and future setting types like
+// locations/ or lore/ would reuse this the same way).
+export async function listMarkdownEntries(opts: {
+  novelId: string;
+  ref: string;
+  prefix: string;
+}): Promise<MarkdownEntry[]> {
+  const { dir } = await checkoutScratchDir(opts.novelId);
+  try {
+    const files = (await gitOps.listFilesAtRef(dir, opts.ref))
+      .filter((f) => f.endsWith(".md") && f.startsWith(opts.prefix))
+      .sort((a, b) => a.localeCompare(b));
+
+    return await Promise.all(
+      files.map(async (path) => ({
+        path,
+        file: path.slice(opts.prefix.length),
+        content:
+          (await gitOps.readFileAtRef(dir, { ref: opts.ref, filepath: path })) ?? "",
+      })),
+    );
+  } finally {
+    await discardScratchDir(dir);
+  }
+}
+
 export async function getHistory(opts: {
   novelId: string;
   ref: string;
