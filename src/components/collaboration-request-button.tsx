@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { getCollaboratorRole, getMyCollaborationRequest } from "@/lib/queries";
 import { requestCollaborationAction } from "@/lib/actions/collaborators";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,11 +26,9 @@ export async function CollaborationRequestButton({
   const myRequest = await getMyCollaborationRequest(novel.id, session.user.id);
 
   if (myRequest?.status === "pending") {
-    return (
-      <Button type="button" variant="outline" disabled>
-        협업 요청 대기 중
-      </Button>
-    );
+    // Not a pressable action, just a status — a Badge keeps it visually
+    // subordinate to real buttons instead of looking like a disabled one.
+    return <Badge variant="secondary">협업 요청 대기 중</Badge>;
   }
 
   return (

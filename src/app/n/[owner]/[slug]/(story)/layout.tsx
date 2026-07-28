@@ -42,11 +42,13 @@ export default async function NovelLayout({
   return (
     <div className="flex min-h-full flex-col">
       <ThinTopBar prefix={found.novel.name} />
-      <div className="border-b px-4 pt-6 lg:px-8">
-        <h1 className="mb-4 truncate text-2xl font-semibold tracking-tight">
-          {found.novel.name}
-        </h1>
-        <StoryTabs items={tabs} />
+      <div className="px-4 pt-6 lg:px-8">
+        <div className="mx-auto flex w-full max-w-4xl flex-col border-b">
+          <h1 className="mb-4 truncate text-2xl font-semibold tracking-tight">
+            {found.novel.name}
+          </h1>
+          <StoryTabs items={tabs} />
+        </div>
       </div>
       <main className="min-w-0 flex-1 px-4 py-8 lg:px-8">{children}</main>
     </div>
