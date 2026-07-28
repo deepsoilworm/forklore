@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AiAssistPanel } from "@/components/ai-assist-panel";
 import { Markdown } from "@/components/markdown";
 import { commitChapterAction } from "@/lib/actions/chapters";
 
@@ -14,7 +13,6 @@ export function ChapterEditorForm({
   owner,
   slug,
   branch,
-  novelId,
   path,
   defaultFilepathPrefix = "chapters/",
   initialContent,
@@ -22,7 +20,6 @@ export function ChapterEditorForm({
   owner: string;
   slug: string;
   branch: string;
-  novelId: string;
   path: string | null;
   defaultFilepathPrefix?: string;
   initialContent: string;
@@ -31,8 +28,8 @@ export function ChapterEditorForm({
   const charCount = content.replace(/\s/g, "").length;
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-      <form action={commitChapterAction} className="flex flex-1 flex-col gap-4">
+    <div className="mx-auto w-full max-w-2xl">
+      <form action={commitChapterAction} className="flex flex-col gap-4">
         <input type="hidden" name="owner" value={owner} />
         <input type="hidden" name="slug" value={slug} />
         <input type="hidden" name="branch" value={branch} />
@@ -98,10 +95,6 @@ export function ChapterEditorForm({
           커밋
         </Button>
       </form>
-
-      <div className="w-full lg:w-80">
-        <AiAssistPanel novelId={novelId} getContent={() => content} />
-      </div>
     </div>
   );
 }

@@ -35,14 +35,13 @@ export default async function EditChapterPage({
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-lg font-medium">
+      <h2 className="mx-auto w-full max-w-2xl text-lg font-medium">
         {path ? `${path} 편집` : `새 ${label}`} — 브랜치 {branch}
       </h2>
       <ChapterEditorForm
         owner={owner}
         slug={slug}
         branch={branch}
-        novelId={found.novel.id}
         path={path ?? null}
         defaultFilepathPrefix={kind === "character" ? "characters/" : "chapters/"}
         initialContent={content ?? ""}
