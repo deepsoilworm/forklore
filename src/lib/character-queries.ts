@@ -1,5 +1,6 @@
 import { db } from "@/db";
 import {
+  characterChangeRequests,
   characterDevelopments,
   characterFields,
   characterRevisions,
@@ -82,6 +83,34 @@ export async function getCharacterRevision(characterId: string, revisionId: stri
     .select()
     .from(characterRevisions)
     .where(and(eq(characterRevisions.id, revisionId), eq(characterRevisions.characterId, characterId)))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function listPendingCharacterChangeRequests(characterId: string) {
+  return db
+    .select({ request: characterChangeRequests, author: users })
+    .from(characterChangeRequests)
+    .innerJoin(users, eq(characterChangeRequests.authorId, users.id))
+    .where(
+      and(
+        eq(characterChangeRequests.characterId, characterId),
+        eq(characterChangeRequests.status, "pending"),
+      ),
+    )
+    .orderBy(asc(characterChangeRequests.createdAt));
+}
+
+export async function getCharacterChangeRequest(characterId: string, requestId: string) {
+  const [row] = await db
+    .select()
+    .from(characterChangeRequests)
+    .where(
+      and(
+        eq(characterChangeRequests.id, requestId),
+        eq(characterChangeRequests.characterId, characterId),
+      ),
+    )
     .limit(1);
   return row ?? null;
 }

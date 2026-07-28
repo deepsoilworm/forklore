@@ -13,6 +13,7 @@ export function NoteForm({
   noteId,
   initialTitle = "",
   initialBody = "",
+  isOwner = true,
 }: {
   owner: string;
   slug: string;
@@ -20,6 +21,7 @@ export function NoteForm({
   noteId?: string;
   initialTitle?: string;
   initialBody?: string;
+  isOwner?: boolean;
 }) {
   const [title, setTitle] = useState(initialTitle);
   const [body, setBody] = useState(initialBody);
@@ -56,8 +58,13 @@ export function NoteForm({
         </div>
       </div>
 
+      {noteId && !isOwner && (
+        <p className="text-xs text-muted-foreground">
+          소유자가 아니라서 바로 반영되지 않고, 변경 요청으로 접수돼요.
+        </p>
+      )}
       <Button type="submit" className="self-start">
-        저장
+        {noteId && !isOwner ? "수정 요청 보내기" : "저장"}
       </Button>
     </form>
   );

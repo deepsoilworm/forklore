@@ -13,6 +13,7 @@ export function CharacterForm({
   owner,
   slug,
   initial,
+  isOwner = true,
 }: {
   owner: string;
   slug: string;
@@ -22,6 +23,7 @@ export function CharacterForm({
     description: string | null;
     fields: { label: string; value: string }[];
   };
+  isOwner?: boolean;
 }) {
   const [fields, setFields] = useState<{ label: string; value: string }[]>(
     initial?.fields.map((f) => ({ label: f.label, value: f.value })) ??
@@ -105,8 +107,13 @@ export function CharacterForm({
         />
       </div>
 
+      {initial && !isOwner && (
+        <p className="text-xs text-muted-foreground">
+          소유자가 아니라서 바로 반영되지 않고, 변경 요청으로 접수돼요.
+        </p>
+      )}
       <Button type="submit" className="self-start">
-        저장
+        {initial && !isOwner ? "수정 요청 보내기" : "저장"}
       </Button>
     </form>
   );

@@ -7,8 +7,14 @@ import {
   listCharacterDevelopments,
   listCharacterRevisions,
   listEncountersForCharacter,
+  listPendingCharacterChangeRequests,
 } from "@/lib/character-queries";
-import { addCharacterDevelopmentAction, restoreCharacterRevisionAction } from "@/lib/actions/characters";
+import {
+  addCharacterDevelopmentAction,
+  approveCharacterChangeRequestAction,
+  rejectCharacterChangeRequestAction,
+  restoreCharacterRevisionAction,
+} from "@/lib/actions/characters";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -27,15 +33,17 @@ export default async function CharacterDetailPage({
   const character = await getCharacter(found.novel.id, id);
   if (!character) notFound();
 
-  const [session, encounters, developments, revisions] = await Promise.all([
+  const [session, encounters, developments, revisions, pendingRequests] = await Promise.all([
     auth(),
     listEncountersForCharacter(character.id),
     listCharacterDevelopments(character.id),
     listCharacterRevisions(character.id),
+    listPendingCharacterChangeRequests(character.id),
   ]);
   const writable = session?.user?.id
     ? await canWrite(found.novel, session.user.id)
     : false;
+  const isOwner = session?.user?.id === found.novel.ownerId;
   const base = `/n/${owner}/${slug}`;
 
   return (
@@ -132,6 +140,51 @@ export default async function CharacterDetailPage({
           </details>
         )}
       </div>
+
+      {pendingRequests.length > 0 && (
+        <div className="flex flex-col gap-2 border-t pt-6">
+          <h2 className="px-1 text-sm font-medium text-muted-foreground">
+            변경 요청 대기 중 ({pendingRequests.length})
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {pendingRequests.map(({ request, author }) => (
+              <li key={request.id} className="flex flex-col gap-2 rounded-lg border px-3 py-2.5 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-muted-foreground">
+                    {author.username} · {formatDistanceToNow(request.createdAt, { addSuffix: true })}
+                  </span>
+                  {isOwner && (
+                    <div className="flex gap-2">
+                      <form action={rejectCharacterChangeRequestAction}>
+                        <input type="hidden" name="owner" value={owner} />
+                        <input type="hidden" name="slug" value={slug} />
+                        <input type="hidden" name="characterId" value={character.id} />
+                        <input type="hidden" name="requestId" value={request.id} />
+                        <Button type="submit" variant="outline" size="sm">
+                          거절
+                        </Button>
+                      </form>
+                      <form action={approveCharacterChangeRequestAction}>
+                        <input type="hidden" name="owner" value={owner} />
+                        <input type="hidden" name="slug" value={slug} />
+                        <input type="hidden" name="characterId" value={character.id} />
+                        <input type="hidden" name="requestId" value={request.id} />
+                        <Button type="submit" size="sm">
+                          승인
+                        </Button>
+                      </form>
+                    </div>
+                  )}
+                </div>
+                <p className="font-medium">{request.name}</p>
+                {request.description && (
+                  <p className="whitespace-pre-wrap text-muted-foreground">{request.description}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {revisions.length > 0 && (
         <details className="border-t pt-6">

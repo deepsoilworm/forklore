@@ -34,6 +34,7 @@ export default async function EditNotePage({
         action={updateResearchNoteAction}
         initialTitle={note.title}
         initialBody={note.body ?? ""}
+        isOwner={session.user.id === found.novel.ownerId}
       />
 
       <form action={deleteResearchNoteAction} className="border-t pt-4">

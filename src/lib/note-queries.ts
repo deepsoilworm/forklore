@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { researchNoteRevisions, researchNotes, users } from "@/db/schema";
+import { noteChangeRequests, researchNoteRevisions, researchNotes, users } from "@/db/schema";
 import { and, asc, desc, eq } from "drizzle-orm";
 
 export async function listResearchNotes(novelId: string) {
@@ -33,6 +33,24 @@ export async function getResearchNoteRevision(noteId: string, revisionId: string
     .select()
     .from(researchNoteRevisions)
     .where(and(eq(researchNoteRevisions.id, revisionId), eq(researchNoteRevisions.noteId, noteId)))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function listPendingNoteChangeRequests(noteId: string) {
+  return db
+    .select({ request: noteChangeRequests, author: users })
+    .from(noteChangeRequests)
+    .innerJoin(users, eq(noteChangeRequests.authorId, users.id))
+    .where(and(eq(noteChangeRequests.noteId, noteId), eq(noteChangeRequests.status, "pending")))
+    .orderBy(asc(noteChangeRequests.createdAt));
+}
+
+export async function getNoteChangeRequest(noteId: string, requestId: string) {
+  const [row] = await db
+    .select()
+    .from(noteChangeRequests)
+    .where(and(eq(noteChangeRequests.id, requestId), eq(noteChangeRequests.noteId, noteId)))
     .limit(1);
   return row ?? null;
 }

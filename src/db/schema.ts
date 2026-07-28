@@ -39,6 +39,11 @@ export const storyStatusEnum = pgEnum("story_status", [
   "completed",
   "hiatus",
 ]);
+export const changeRequestStatusEnum = pgEnum("change_request_status", [
+  "pending",
+  "approved",
+  "rejected",
+]);
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -391,6 +396,32 @@ export const characterRevisions = pgTable(
   (t) => [index("character_revisions_character_idx").on(t.characterId, t.createdAt)],
 );
 
+// A proposed edit to a character sheet, mirroring the branch → pull
+// request → merge flow chapters already have. The owner can still edit
+// directly (equivalent to pushing straight to main); anyone else's edit
+// lands here as "pending" until the owner approves it, instead of
+// overwriting the sheet immediately.
+export const characterChangeRequests = pgTable(
+  "character_change_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    characterId: uuid("character_id")
+      .notNull()
+      .references(() => characters.id, { onDelete: "cascade" }),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    fields: jsonb("fields").notNull().default([]),
+    status: changeRequestStatusEnum("status").notNull().default("pending"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    resolvedAt: timestamp("resolved_at"),
+    resolvedById: uuid("resolved_by_id").references(() => users.id, { onDelete: "set null" }),
+  },
+  (t) => [index("character_change_requests_character_idx").on(t.characterId, t.status)],
+);
+
 // A "track" in the encounter timeline — a plot thread (main plot, a
 // subplot, a character's side arc, ...). Encounters unassigned to any
 // plot line just render in a catch-all "미분류" row.
@@ -567,6 +598,28 @@ export const researchNoteRevisions = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [index("research_note_revisions_note_idx").on(t.noteId, t.createdAt)],
+);
+
+// A proposed edit to a note — same request/approve flow as
+// character_change_requests, for the same reason.
+export const noteChangeRequests = pgTable(
+  "note_change_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    noteId: uuid("note_id")
+      .notNull()
+      .references(() => researchNotes.id, { onDelete: "cascade" }),
+    authorId: uuid("author_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    body: text("body"),
+    status: changeRequestStatusEnum("status").notNull().default("pending"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    resolvedAt: timestamp("resolved_at"),
+    resolvedById: uuid("resolved_by_id").references(() => users.id, { onDelete: "set null" }),
+  },
+  (t) => [index("note_change_requests_note_idx").on(t.noteId, t.status)],
 );
 
 // AI writing-assist usage, tracked per call so a future paid tier can meter it.

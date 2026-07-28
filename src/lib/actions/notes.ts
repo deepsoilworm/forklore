@@ -2,9 +2,9 @@
 
 import { auth } from "@/auth";
 import { db } from "@/db";
-import { researchNoteRevisions, researchNotes } from "@/db/schema";
+import { noteChangeRequests, researchNoteRevisions, researchNotes } from "@/db/schema";
 import { canWrite, getNovelByOwnerSlug } from "@/lib/queries";
-import { getResearchNote, getResearchNoteRevision } from "@/lib/note-queries";
+import { getNoteChangeRequest, getResearchNote, getResearchNoteRevision } from "@/lib/note-queries";
 import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -79,6 +79,18 @@ export async function updateResearchNoteAction(formData: FormData) {
   const existing = await getResearchNote(found.novel.id, parsed.noteId);
   if (!existing) throw new Error("노트를 찾을 수 없습니다");
 
+  // Same branch → PR → merge mirroring as characters: the owner edits
+  // directly, anyone else's edit becomes a pending request instead.
+  if (session.user.id !== found.novel.ownerId) {
+    await db.insert(noteChangeRequests).values({
+      noteId: parsed.noteId,
+      authorId: session.user.id,
+      title: parsed.title,
+      body: parsed.body,
+    });
+    redirect(`/n/${parsed.owner}/${parsed.slug}/notes/${parsed.noteId}`);
+  }
+
   await db.transaction(async (tx) => {
     // Multiple collaborators can edit the same note — snapshot what it
     // looked like right before this edit overwrites it.
@@ -142,6 +154,81 @@ export async function restoreResearchNoteRevisionAction(formData: FormData) {
   });
 
   redirect(`/n/${parsed.owner}/${parsed.slug}/notes/${parsed.noteId}`);
+}
+
+const resolveRequestSchema = z.object({
+  owner: z.string(),
+  slug: z.string(),
+  noteId: z.string().uuid(),
+  requestId: z.string().uuid(),
+});
+
+export async function approveNoteChangeRequestAction(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("로그인이 필요합니다");
+
+  const parsed = resolveRequestSchema.parse({
+    owner: formData.get("owner"),
+    slug: formData.get("slug"),
+    noteId: formData.get("noteId"),
+    requestId: formData.get("requestId"),
+  });
+
+  const found = await getNovelByOwnerSlug(parsed.owner, parsed.slug);
+  if (!found) throw new Error("이야기를 찾을 수 없습니다");
+  if (session.user.id !== found.novel.ownerId) {
+    throw new Error("소유자만 변경 요청을 승인할 수 있어요");
+  }
+
+  const [current, request] = await Promise.all([
+    getResearchNote(found.novel.id, parsed.noteId),
+    getNoteChangeRequest(parsed.noteId, parsed.requestId),
+  ]);
+  if (!current || !request || request.status !== "pending") throw new Error("찾을 수 없습니다");
+
+  await db.transaction(async (tx) => {
+    await tx.insert(researchNoteRevisions).values({
+      noteId: current.id,
+      title: current.title,
+      body: current.body,
+      authorId: session.user!.id,
+    });
+    await tx
+      .update(researchNotes)
+      .set({ title: request.title, body: request.body, updatedAt: new Date() })
+      .where(eq(researchNotes.id, current.id));
+    await tx
+      .update(noteChangeRequests)
+      .set({ status: "approved", resolvedAt: new Date(), resolvedById: session.user!.id })
+      .where(eq(noteChangeRequests.id, request.id));
+  });
+
+  redirect(`/n/${parsed.owner}/${parsed.slug}/notes/${parsed.noteId}`);
+}
+
+export async function rejectNoteChangeRequestAction(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("로그인이 필요합니다");
+
+  const parsed = resolveRequestSchema.parse({
+    owner: formData.get("owner"),
+    slug: formData.get("slug"),
+    noteId: formData.get("noteId"),
+    requestId: formData.get("requestId"),
+  });
+
+  const found = await getNovelByOwnerSlug(parsed.owner, parsed.slug);
+  if (!found) throw new Error("이야기를 찾을 수 없습니다");
+  if (session.user.id !== found.novel.ownerId) {
+    throw new Error("소유자만 변경 요청을 거절할 수 있어요");
+  }
+
+  await db
+    .update(noteChangeRequests)
+    .set({ status: "rejected", resolvedAt: new Date(), resolvedById: session.user.id })
+    .where(and(eq(noteChangeRequests.id, parsed.requestId), eq(noteChangeRequests.noteId, parsed.noteId)));
+
+  revalidatePath(`/n/${parsed.owner}/${parsed.slug}/notes/${parsed.noteId}`);
 }
 
 const deleteSchema = z.object({

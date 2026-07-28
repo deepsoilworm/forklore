@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { db } from "@/db";
 import {
+  characterChangeRequests,
   characterDevelopments,
   characterFields,
   characterRevisions,
@@ -12,7 +13,7 @@ import {
   plotLines,
 } from "@/db/schema";
 import { canWrite, getNovelByOwnerSlug } from "@/lib/queries";
-import { getCharacter, getCharacterRevision } from "@/lib/character-queries";
+import { getCharacter, getCharacterChangeRequest, getCharacterRevision } from "@/lib/character-queries";
 import { and, eq, inArray } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -53,6 +54,24 @@ export async function saveCharacterAction(formData: FormData) {
     .filter((f) => f.label && f.value);
 
   const values = { name: parsed.name, description: parsed.description ?? null };
+
+  // Editing an EXISTING character mirrors the chapter branch → PR → merge
+  // flow: the owner can push straight through (equivalent to committing
+  // to main), but anyone else's edit becomes a pending request the owner
+  // has to approve before it actually changes the sheet. Creating a
+  // brand-new character doesn't need review — there's nothing existing to
+  // protect, same as committing a new file needing no PR.
+  if (parsed.id && session.user.id !== found.novel.ownerId) {
+    await db.insert(characterChangeRequests).values({
+      characterId: parsed.id,
+      authorId: session.user.id,
+      name: parsed.name,
+      description: parsed.description ?? null,
+      fields,
+    });
+    revalidatePath(`/n/${parsed.owner}/${parsed.slug}/characters/${parsed.id}`);
+    redirect(`/n/${parsed.owner}/${parsed.slug}/characters/${parsed.id}`);
+  }
 
   // Multiple collaborators can edit the same character — snapshot what
   // it looked like right before this edit overwrites it, so it's
@@ -157,6 +176,105 @@ export async function restoreCharacterRevisionAction(formData: FormData) {
 
   revalidatePath(`/n/${parsed.owner}/${parsed.slug}/characters/${parsed.characterId}`);
   redirect(`/n/${parsed.owner}/${parsed.slug}/characters/${parsed.characterId}`);
+}
+
+const resolveRequestSchema = z.object({
+  owner: z.string(),
+  slug: z.string(),
+  characterId: z.string().uuid(),
+  requestId: z.string().uuid(),
+});
+
+export async function approveCharacterChangeRequestAction(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("로그인이 필요합니다");
+
+  const parsed = resolveRequestSchema.parse({
+    owner: formData.get("owner"),
+    slug: formData.get("slug"),
+    characterId: formData.get("characterId"),
+    requestId: formData.get("requestId"),
+  });
+
+  const found = await getNovelByOwnerSlug(parsed.owner, parsed.slug);
+  if (!found) throw new Error("이야기를 찾을 수 없습니다");
+  if (session.user.id !== found.novel.ownerId) {
+    throw new Error("소유자만 변경 요청을 승인할 수 있어요");
+  }
+
+  const [current, request] = await Promise.all([
+    getCharacter(found.novel.id, parsed.characterId),
+    getCharacterChangeRequest(parsed.characterId, parsed.requestId),
+  ]);
+  if (!current || !request || request.status !== "pending") throw new Error("찾을 수 없습니다");
+
+  const requestFields = request.fields as { label: string; value: string }[];
+
+  await db.transaction(async (tx) => {
+    // Snapshot what the sheet looked like right before this request is
+    // applied — same reasoning as every other edit path.
+    await tx.insert(characterRevisions).values({
+      characterId: current.id,
+      name: current.name,
+      description: current.description,
+      fields: current.fields.map((f) => ({ label: f.label, value: f.value })),
+      authorId: session.user!.id,
+    });
+
+    await tx
+      .update(characters)
+      .set({ name: request.name, description: request.description, updatedAt: new Date() })
+      .where(eq(characters.id, current.id));
+    await tx.delete(characterFields).where(eq(characterFields.characterId, current.id));
+    if (requestFields.length > 0) {
+      await tx.insert(characterFields).values(
+        requestFields.map((f, i) => ({
+          characterId: current.id,
+          label: f.label,
+          value: f.value,
+          order: i,
+        })),
+      );
+    }
+
+    await tx
+      .update(characterChangeRequests)
+      .set({ status: "approved", resolvedAt: new Date(), resolvedById: session.user!.id })
+      .where(eq(characterChangeRequests.id, request.id));
+  });
+
+  revalidatePath(`/n/${parsed.owner}/${parsed.slug}/characters/${parsed.characterId}`);
+  redirect(`/n/${parsed.owner}/${parsed.slug}/characters/${parsed.characterId}`);
+}
+
+export async function rejectCharacterChangeRequestAction(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("로그인이 필요합니다");
+
+  const parsed = resolveRequestSchema.parse({
+    owner: formData.get("owner"),
+    slug: formData.get("slug"),
+    characterId: formData.get("characterId"),
+    requestId: formData.get("requestId"),
+  });
+
+  const found = await getNovelByOwnerSlug(parsed.owner, parsed.slug);
+  if (!found) throw new Error("이야기를 찾을 수 없습니다");
+  if (session.user.id !== found.novel.ownerId) {
+    throw new Error("소유자만 변경 요청을 거절할 수 있어요");
+  }
+
+  await db
+    .update(characterChangeRequests)
+    .set({ status: "rejected", resolvedAt: new Date(), resolvedById: session.user.id })
+    .where(
+      and(
+        eq(characterChangeRequests.id, parsed.requestId),
+        eq(characterChangeRequests.characterId, parsed.characterId),
+      ),
+    );
+
+  revalidatePath(`/n/${parsed.owner}/${parsed.slug}/characters/${parsed.characterId}`);
 }
 
 const encounterSchema = z.object({

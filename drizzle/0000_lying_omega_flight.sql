@@ -1,4 +1,5 @@
 CREATE TYPE "public"."category" AS ENUM('fantasy', 'romance', 'wuxia', 'sf', 'mystery', 'drama', 'horror', 'bl', 'historical', 'other');--> statement-breakpoint
+CREATE TYPE "public"."change_request_status" AS ENUM('pending', 'approved', 'rejected');--> statement-breakpoint
 CREATE TYPE "public"."collaboration_request_status" AS ENUM('pending', 'accepted', 'rejected');--> statement-breakpoint
 CREATE TYPE "public"."issue_status" AS ENUM('open', 'closed');--> statement-breakpoint
 CREATE TYPE "public"."language" AS ENUM('ko', 'en', 'ja', 'other');--> statement-breakpoint
@@ -29,6 +30,19 @@ CREATE TABLE "ai_usage" (
 	"kind" text NOT NULL,
 	"tokens_used" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "character_change_requests" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"character_id" uuid NOT NULL,
+	"author_id" uuid NOT NULL,
+	"name" text NOT NULL,
+	"description" text,
+	"fields" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"status" "change_request_status" DEFAULT 'pending' NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"resolved_at" timestamp,
+	"resolved_by_id" uuid
 );
 --> statement-breakpoint
 CREATE TABLE "character_developments" (
@@ -143,6 +157,18 @@ CREATE TABLE "issues" (
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	"closed_at" timestamp
+);
+--> statement-breakpoint
+CREATE TABLE "note_change_requests" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"note_id" uuid NOT NULL,
+	"author_id" uuid NOT NULL,
+	"title" text NOT NULL,
+	"body" text,
+	"status" "change_request_status" DEFAULT 'pending' NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"resolved_at" timestamp,
+	"resolved_by_id" uuid
 );
 --> statement-breakpoint
 CREATE TABLE "novel_visits" (
@@ -295,6 +321,9 @@ CREATE TABLE "verification_tokens" (
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ai_usage" ADD CONSTRAINT "ai_usage_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ai_usage" ADD CONSTRAINT "ai_usage_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "character_change_requests" ADD CONSTRAINT "character_change_requests_character_id_characters_id_fk" FOREIGN KEY ("character_id") REFERENCES "public"."characters"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "character_change_requests" ADD CONSTRAINT "character_change_requests_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "character_change_requests" ADD CONSTRAINT "character_change_requests_resolved_by_id_users_id_fk" FOREIGN KEY ("resolved_by_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "character_developments" ADD CONSTRAINT "character_developments_character_id_characters_id_fk" FOREIGN KEY ("character_id") REFERENCES "public"."characters"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "character_fields" ADD CONSTRAINT "character_fields_character_id_characters_id_fk" FOREIGN KEY ("character_id") REFERENCES "public"."characters"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "character_revisions" ADD CONSTRAINT "character_revisions_character_id_characters_id_fk" FOREIGN KEY ("character_id") REFERENCES "public"."characters"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -316,6 +345,9 @@ ALTER TABLE "issue_comments" ADD CONSTRAINT "issue_comments_issue_id_issues_id_f
 ALTER TABLE "issue_comments" ADD CONSTRAINT "issue_comments_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "issues" ADD CONSTRAINT "issues_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "issues" ADD CONSTRAINT "issues_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "note_change_requests" ADD CONSTRAINT "note_change_requests_note_id_research_notes_id_fk" FOREIGN KEY ("note_id") REFERENCES "public"."research_notes"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "note_change_requests" ADD CONSTRAINT "note_change_requests_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "note_change_requests" ADD CONSTRAINT "note_change_requests_resolved_by_id_users_id_fk" FOREIGN KEY ("resolved_by_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "novel_visits" ADD CONSTRAINT "novel_visits_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "novel_visits" ADD CONSTRAINT "novel_visits_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "novels" ADD CONSTRAINT "novels_owner_id_users_id_fk" FOREIGN KEY ("owner_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -338,6 +370,7 @@ ALTER TABLE "research_notes" ADD CONSTRAINT "research_notes_author_id_users_id_f
 ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "stars" ADD CONSTRAINT "stars_novel_id_novels_id_fk" FOREIGN KEY ("novel_id") REFERENCES "public"."novels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "stars" ADD CONSTRAINT "stars_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "character_change_requests_character_idx" ON "character_change_requests" USING btree ("character_id","status");--> statement-breakpoint
 CREATE INDEX "character_developments_character_idx" ON "character_developments" USING btree ("character_id","order");--> statement-breakpoint
 CREATE INDEX "character_fields_character_idx" ON "character_fields" USING btree ("character_id","order");--> statement-breakpoint
 CREATE INDEX "character_revisions_character_idx" ON "character_revisions" USING btree ("character_id","created_at");--> statement-breakpoint
@@ -350,6 +383,7 @@ CREATE INDEX "encounters_plot_line_idx" ON "encounters" USING btree ("plot_line_
 CREATE INDEX "episode_comments_lookup_idx" ON "episode_comments" USING btree ("novel_id","episode_path");--> statement-breakpoint
 CREATE UNIQUE INDEX "issue_novel_number_idx" ON "issues" USING btree ("novel_id","number");--> statement-breakpoint
 CREATE INDEX "issue_novel_status_idx" ON "issues" USING btree ("novel_id","status");--> statement-breakpoint
+CREATE INDEX "note_change_requests_note_idx" ON "note_change_requests" USING btree ("note_id","status");--> statement-breakpoint
 CREATE INDEX "novel_visits_user_idx" ON "novel_visits" USING btree ("user_id","visited_at");--> statement-breakpoint
 CREATE INDEX "novels_owner_idx" ON "novels" USING btree ("owner_id");--> statement-breakpoint
 CREATE INDEX "plot_lines_novel_idx" ON "plot_lines" USING btree ("novel_id","order");--> statement-breakpoint
