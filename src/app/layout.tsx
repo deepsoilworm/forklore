@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Forklore — 함께 쓰는 오픈소스 소설 플랫폼",
-  description: "Git처럼 브랜치, 커밋, 머지로 협업하며 소설을 쓰는 오픈소스 플랫폼",
+  title: "Forklore — 함께 쓰는 오픈소스 이야기 플랫폼",
+  description: "Git처럼 브랜치, 커밋, 머지로 협업하며 이야기를 쓰는 오픈소스 플랫폼",
 };
 
 export default function RootLayout({

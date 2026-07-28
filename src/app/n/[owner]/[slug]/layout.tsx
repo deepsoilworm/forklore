@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getNovelByOwnerSlug } from "@/lib/queries";
+import { auth } from "@/auth";
+import { canRead, getNovelByOwnerSlug } from "@/lib/queries";
+import { CATEGORY_LABELS, LANGUAGE_LABELS } from "@/lib/labels";
 import { Badge } from "@/components/ui/badge";
 
 export default async function NovelLayout({
@@ -14,8 +16,12 @@ export default async function NovelLayout({
   const found = await getNovelByOwnerSlug(owner, slug);
   if (!found) notFound();
 
+  const session = await auth();
+  if (!(await canRead(found.novel, session?.user?.id ?? null))) notFound();
+
   const base = `/n/${owner}/${slug}`;
   const tabs = [
+    { href: `${base}/read`, label: "읽기" },
     { href: base, label: "코드" },
     { href: `${base}/characters`, label: "인물" },
     { href: `${base}/commits`, label: "커밋" },
@@ -35,6 +41,8 @@ export default async function NovelLayout({
         <Badge variant={found.novel.visibility === "public" ? "secondary" : "outline"}>
           {found.novel.visibility === "public" ? "공개" : "비공개"}
         </Badge>
+        <Badge variant="outline">{CATEGORY_LABELS[found.novel.category]}</Badge>
+        <Badge variant="outline">{LANGUAGE_LABELS[found.novel.language]}</Badge>
       </div>
       <nav className="mb-6 flex gap-4 border-b text-sm">
         {tabs.map((tab) => (

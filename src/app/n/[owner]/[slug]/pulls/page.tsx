@@ -25,7 +25,11 @@ export default async function PullsPage({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
-        <Button size="sm" render={<Link href={`/n/${owner}/${slug}/pulls/new`} />}>
+        <Button
+          size="sm"
+          nativeButton={false}
+          render={<Link href={`/n/${owner}/${slug}/pulls/new`} />}
+        >
           새 풀 리퀘스트
         </Button>
       </div>

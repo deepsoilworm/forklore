@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth";
 import { createNovel } from "@/lib/git/novel-repo";
+import { categoryEnum, languageEnum } from "@/db/schema";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
@@ -14,6 +15,8 @@ const schema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional(),
   visibility: z.enum(["public", "private"]),
+  category: z.enum(categoryEnum.enumValues),
+  language: z.enum(languageEnum.enumValues),
 });
 
 export async function createNovelAction(formData: FormData) {
@@ -27,6 +30,8 @@ export async function createNovelAction(formData: FormData) {
     name: formData.get("name"),
     description: formData.get("description") || undefined,
     visibility: formData.get("visibility") === "private" ? "private" : "public",
+    category: formData.get("category") || "other",
+    language: formData.get("language") || "ko",
   });
 
   const novel = await createNovel({
@@ -35,11 +40,13 @@ export async function createNovelAction(formData: FormData) {
     name: parsed.name,
     description: parsed.description,
     visibility: parsed.visibility,
+    category: parsed.category,
+    language: parsed.language,
     author: {
       name: session.user.name ?? session.user.username,
       email: session.user.email ?? `${session.user.username}@users.forklore.dev`,
     },
   });
 
-  redirect(`/n/${session.user.username}/${novel.slug}`);
+  redirect(`/n/${session.user.username}/${novel.slug}/read`);
 }

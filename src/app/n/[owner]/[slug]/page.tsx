@@ -46,6 +46,7 @@ export default async function NovelOverviewPage({
         {writable && (
           <Button
             size="sm"
+            nativeButton={false}
             render={<Link href={`${base}/edit?branch=${encodeURIComponent(branch)}`} />}
           >
             새 챕터 쓰기
@@ -63,16 +64,27 @@ export default async function NovelOverviewPage({
           </p>
         ) : (
           <ul className="divide-y">
-            {chapters.map((path) => (
-              <li key={path}>
-                <Link
-                  href={`${base}/edit?branch=${encodeURIComponent(branch)}&path=${encodeURIComponent(path)}`}
-                  className="flex items-center px-4 py-2.5 text-sm hover:bg-accent/50"
-                >
-                  {path}
-                </Link>
-              </li>
-            ))}
+            {chapters.map((path) => {
+              const file = path.slice("chapters/".length);
+              return (
+                <li key={path} className="flex items-center justify-between px-4 py-2.5 text-sm">
+                  <Link
+                    href={`${base}/read/${encodeURIComponent(file)}?branch=${encodeURIComponent(branch)}`}
+                    className="hover:bg-accent/50"
+                  >
+                    {path}
+                  </Link>
+                  {writable && (
+                    <Link
+                      href={`${base}/edit?branch=${encodeURIComponent(branch)}&path=${encodeURIComponent(path)}`}
+                      className="text-xs text-muted-foreground hover:underline"
+                    >
+                      편집
+                    </Link>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

@@ -37,6 +37,7 @@ export default async function CharactersPage({
         {writable && (
           <Button
             size="sm"
+            nativeButton={false}
             render={
               <Link
                 href={`${base}/edit?branch=${encodeURIComponent(branch)}&kind=character`}

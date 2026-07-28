@@ -1,6 +1,8 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { createNovelAction } from "@/lib/actions/novels";
+import { categoryEnum, languageEnum } from "@/db/schema";
+import { CATEGORY_LABELS, LANGUAGE_LABELS } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +17,7 @@ export default async function NewNovelPage() {
     <div className="mx-auto max-w-lg px-4 py-10">
       <Card>
         <CardHeader>
-          <CardTitle>새 소설 만들기</CardTitle>
+          <CardTitle>새 이야기 만들기</CardTitle>
         </CardHeader>
         <CardContent>
           <form action={createNovelAction} className="flex flex-col gap-4">
@@ -30,16 +32,48 @@ export default async function NewNovelPage() {
                 name="slug"
                 required
                 pattern="[a-z0-9-]+"
-                placeholder="my-novel"
+                placeholder="my-story"
               />
               <p className="text-xs text-muted-foreground">
-                /n/{session.user.username}/<b>slug</b> 형태로 소설 주소가
+                /n/{session.user.username}/<b>slug</b> 형태로 이야기 주소가
                 만들어져요. 소문자, 숫자, 하이픈만 사용하세요.
               </p>
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="description">소개</Label>
               <Textarea id="description" name="description" maxLength={500} />
+            </div>
+            <div className="flex gap-3">
+              <div className="flex flex-1 flex-col gap-2">
+                <Label htmlFor="category">장르</Label>
+                <select
+                  id="category"
+                  name="category"
+                  className="h-9 rounded-md border bg-background px-3 text-sm"
+                  defaultValue="other"
+                >
+                  {categoryEnum.enumValues.map((value) => (
+                    <option key={value} value={value}>
+                      {CATEGORY_LABELS[value]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-1 flex-col gap-2">
+                <Label htmlFor="language">언어</Label>
+                <select
+                  id="language"
+                  name="language"
+                  className="h-9 rounded-md border bg-background px-3 text-sm"
+                  defaultValue="ko"
+                >
+                  {languageEnum.enumValues.map((value) => (
+                    <option key={value} value={value}>
+                      {LANGUAGE_LABELS[value]}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="visibility">공개 범위</Label>

@@ -33,9 +33,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   }),
   providers: [GitHub],
   session: { strategy: "database" },
-  pages: {
-    newUser: "/onboarding",
-  },
   events: {
     async createUser({ user }) {
       if (!user.id) return;

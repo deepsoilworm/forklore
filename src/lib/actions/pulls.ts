@@ -33,7 +33,7 @@ export async function createPullRequestAction(formData: FormData) {
   });
 
   const found = await getNovelByOwnerSlug(parsed.owner, parsed.slug);
-  if (!found) throw new Error("소설을 찾을 수 없습니다");
+  if (!found) throw new Error("이야기를 찾을 수 없습니다");
 
   const number = await db.transaction(async (tx) => {
     const [{ max }] = await tx
@@ -65,7 +65,7 @@ export async function mergePullRequestAction(formData: FormData) {
   const number = Number(formData.get("number"));
 
   const found = await getNovelByOwnerSlug(owner, slug);
-  if (!found) throw new Error("소설을 찾을 수 없습니다");
+  if (!found) throw new Error("이야기를 찾을 수 없습니다");
   if (!(await canWrite(found.novel, session.user.id))) {
     throw new Error("병합 권한이 없습니다");
   }
@@ -113,7 +113,7 @@ export async function closePullRequestAction(formData: FormData) {
   const number = Number(formData.get("number"));
 
   const found = await getNovelByOwnerSlug(owner, slug);
-  if (!found) throw new Error("소설을 찾을 수 없습니다");
+  if (!found) throw new Error("이야기를 찾을 수 없습니다");
 
   await db
     .update(pullRequests)

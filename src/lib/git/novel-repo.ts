@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { commits, novels, refs } from "@/db/schema";
+import { categoryEnum, commits, languageEnum, novels, refs } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { withRepoLock } from "./repo-lock";
 import {
@@ -46,6 +46,8 @@ export async function createNovel(opts: {
   name: string;
   description?: string;
   visibility: "public" | "private";
+  category: (typeof categoryEnum.enumValues)[number];
+  language: (typeof languageEnum.enumValues)[number];
   author: Author;
 }) {
   const [novel] = await db
@@ -56,6 +58,8 @@ export async function createNovel(opts: {
       name: opts.name,
       description: opts.description,
       visibility: opts.visibility,
+      category: opts.category,
+      language: opts.language,
     })
     .returning();
 
@@ -158,6 +162,46 @@ export async function listMarkdownFiles(opts: {
     return files
       .filter((f) => f.endsWith(".md"))
       .filter((f) => !opts.prefix || f.startsWith(opts.prefix));
+  } finally {
+    await discardScratchDir(dir);
+  }
+}
+
+export type Episode = {
+  path: string;
+  file: string;
+  index: number;
+  title: string;
+  content: string;
+};
+
+export async function listEpisodes(opts: {
+  novelId: string;
+  ref: string;
+  prefix?: string;
+}): Promise<Episode[]> {
+  const prefix = opts.prefix ?? "chapters/";
+  const { dir } = await checkoutScratchDir(opts.novelId);
+  try {
+    const files = (await gitOps.listFilesAtRef(dir, opts.ref))
+      .filter((f) => f.endsWith(".md") && f.startsWith(prefix))
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+    return await Promise.all(
+      files.map(async (path, i) => {
+        const content =
+          (await gitOps.readFileAtRef(dir, { ref: opts.ref, filepath: path })) ?? "";
+        const file = path.slice(prefix.length);
+        const heading = content.match(/^#\s+(.+)$/m);
+        return {
+          path,
+          file,
+          index: i + 1,
+          title: heading ? heading[1].trim() : file.replace(/\.md$/, ""),
+          content,
+        };
+      }),
+    );
   } finally {
     await discardScratchDir(dir);
   }

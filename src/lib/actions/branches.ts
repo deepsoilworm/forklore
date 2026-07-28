@@ -29,7 +29,7 @@ export async function createBranchAction(formData: FormData) {
   });
 
   const found = await getNovelByOwnerSlug(parsed.owner, parsed.slug);
-  if (!found) throw new Error("소설을 찾을 수 없습니다");
+  if (!found) throw new Error("이야기를 찾을 수 없습니다");
   if (!(await canWrite(found.novel, session.user.id))) {
     throw new Error("쓰기 권한이 없습니다");
   }

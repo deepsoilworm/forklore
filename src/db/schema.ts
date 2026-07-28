@@ -20,6 +20,19 @@ export const roleEnum = pgEnum("collaborator_role", [
   "reader",
 ]);
 export const prStatusEnum = pgEnum("pr_status", ["open", "merged", "closed"]);
+export const categoryEnum = pgEnum("category", [
+  "fantasy",
+  "romance",
+  "wuxia",
+  "sf",
+  "mystery",
+  "drama",
+  "horror",
+  "bl",
+  "historical",
+  "other",
+]);
+export const languageEnum = pgEnum("language", ["ko", "en", "ja", "other"]);
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -91,6 +104,8 @@ export const novels = pgTable(
     name: text("name").notNull(),
     description: text("description"),
     visibility: visibilityEnum("visibility").notNull().default("public"),
+    category: categoryEnum("category").notNull().default("other"),
+    language: languageEnum("language").notNull().default("ko"),
     defaultBranch: text("default_branch").notNull().default("main"),
     // Pointer to the packed git bundle in Vercel Blob storage.
     blobUrl: text("blob_url"),

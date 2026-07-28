@@ -19,15 +19,21 @@ export async function SiteHeader() {
         <nav className="flex items-center gap-3">
           {session?.user ? (
             <>
-              <Button variant="ghost" size="sm" render={<Link href="/new" />}>
-                새 소설
+              <Button
+                variant="ghost"
+                size="sm"
+                nativeButton={false}
+                render={<Link href="/new" />}
+              >
+                새 이야기
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
+                nativeButton={false}
                 render={<Link href={`/u/${session.user.username}`} />}
               >
-                내 소설
+                내 이야기
               </Button>
               <form
                 action={async () => {

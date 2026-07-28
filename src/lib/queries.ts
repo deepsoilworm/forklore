@@ -12,14 +12,24 @@ export async function getNovelByOwnerSlug(owner: string, slug: string) {
   return rows[0] ?? null;
 }
 
-export async function listPublicNovels(limit = 20) {
+export async function listPublicNovels(opts?: {
+  limit?: number;
+  category?: (typeof novels.$inferSelect)["category"];
+  language?: (typeof novels.$inferSelect)["language"];
+}) {
   return db
     .select({ novel: novels, owner: users })
     .from(novels)
     .innerJoin(users, eq(novels.ownerId, users.id))
-    .where(eq(novels.visibility, "public"))
+    .where(
+      and(
+        eq(novels.visibility, "public"),
+        opts?.category ? eq(novels.category, opts.category) : undefined,
+        opts?.language ? eq(novels.language, opts.language) : undefined,
+      ),
+    )
     .orderBy(desc(novels.updatedAt))
-    .limit(limit);
+    .limit(opts?.limit ?? 20);
 }
 
 export async function listNovelsForUser(userId: string) {
@@ -49,6 +59,13 @@ export async function canWrite(novel: typeof novels.$inferSelect, userId: string
   if (novel.ownerId === userId) return true;
   const role = await getCollaboratorRole(novel.id, userId);
   return role === "owner" || role === "maintainer" || role === "writer";
+}
+
+export async function canRead(novel: typeof novels.$inferSelect, userId: string | null) {
+  if (novel.visibility === "public") return true;
+  if (!userId) return false;
+  if (novel.ownerId === userId) return true;
+  return (await getCollaboratorRole(novel.id, userId)) !== null;
 }
 
 export async function listPullRequests(novelId: string) {
