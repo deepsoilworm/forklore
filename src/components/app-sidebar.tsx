@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { PanelLeftClose, X } from "lucide-react";
+import { ChevronDown, PanelLeftClose, X } from "lucide-react";
 import { useSidebar } from "@/components/sidebar-context";
 
 const MAIN_ITEMS = [
@@ -16,6 +16,13 @@ const MAIN_ITEMS = [
 
 type SidebarNovelData = { id: string; name: string; owner: string; slug: string };
 type SidebarLists = { recent: SidebarNovelData[]; starred: SidebarNovelData[] };
+type EditNavData = {
+  name: string;
+  owner: string;
+  slug: string;
+  branch: string;
+  episodes: { path: string; index: number; title: string }[];
+};
 
 function isActive(pathname: string, href: string, exact: boolean) {
   return exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
@@ -65,6 +72,64 @@ function NovelListSection({
   );
 }
 
+function EditChapterTree({
+  nav,
+  pathname,
+  onNavigate,
+}: {
+  nav: EditNavData;
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  const [open, setOpen] = useState(true);
+  const searchParams = useSearchParams();
+  const base = `/n/${nav.owner}/${nav.slug}`;
+  const branchQuery = `branch=${encodeURIComponent(nav.branch)}`;
+  const currentPath = searchParams.get("path");
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-1 rounded-md px-1.5 py-1.5 text-sm font-medium text-foreground hover:bg-accent/50"
+      >
+        <ChevronDown className={`size-3.5 shrink-0 transition-transform ${open ? "" : "-rotate-90"}`} />
+        <span className="truncate">{nav.name}</span>
+      </button>
+      {open && (
+        <nav className="flex flex-col gap-0.5 pl-5">
+          <Link
+            href={`${base}/edit?${branchQuery}`}
+            onClick={onNavigate}
+            className={`truncate rounded-md px-2.5 py-1.5 text-sm transition-colors ${
+              pathname === `${base}/edit` && !currentPath
+                ? "bg-accent font-medium text-foreground"
+                : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+            }`}
+          >
+            + 새 회차
+          </Link>
+          {nav.episodes.map((ep) => (
+            <Link
+              key={ep.path}
+              href={`${base}/edit?${branchQuery}&path=${encodeURIComponent(ep.path)}`}
+              onClick={onNavigate}
+              className={`truncate rounded-md px-2.5 py-1.5 text-sm transition-colors ${
+                currentPath === ep.path
+                  ? "bg-accent font-medium text-foreground"
+                  : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+              }`}
+            >
+              {ep.index}. {ep.title}
+            </Link>
+          ))}
+        </nav>
+      )}
+    </div>
+  );
+}
+
 function NavLink({
   href,
   label,
@@ -103,6 +168,7 @@ export function AppSidebar({
   const pathname = usePathname();
   const { collapsed, setCollapsed, mobileOpen, setMobileOpen } = useSidebar();
   const [lists, setLists] = useState<SidebarLists>({ recent: [], starred: [] });
+  const [fetchedEditNav, setFetchedEditNav] = useState<EditNavData | null>(null);
 
   useEffect(() => {
     if (!session?.username) return;
@@ -118,6 +184,27 @@ export function AppSidebar({
     // Re-fetched on every route change so a just-visited or just-starred
     // novel shows up without a full sidebar reload.
   }, [session?.username, pathname]);
+
+  const editMatch = pathname.match(/^\/n\/([^/]+)\/([^/]+)\/edit$/);
+  const editNav =
+    editMatch && fetchedEditNav?.owner === editMatch[1] && fetchedEditNav?.slug === editMatch[2]
+      ? fetchedEditNav
+      : null;
+
+  useEffect(() => {
+    if (!editMatch) return;
+    const [, owner, slug] = editMatch;
+    let cancelled = false;
+    fetch(`/api/edit-nav?owner=${encodeURIComponent(owner)}&slug=${encodeURIComponent(slug)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data) setFetchedEditNav(data);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editMatch?.[1], editMatch?.[2]]);
 
   const content = (
     <div className="flex h-full flex-col gap-6 overflow-y-auto px-3 py-4">
@@ -154,6 +241,10 @@ export function AppSidebar({
           />
         ))}
       </nav>
+
+      {editNav && (
+        <EditChapterTree nav={editNav} pathname={pathname} onNavigate={() => setMobileOpen(false)} />
+      )}
 
       {session?.username && (
         <div className="flex flex-col gap-1">

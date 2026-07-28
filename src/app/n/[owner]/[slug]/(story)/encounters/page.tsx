@@ -5,6 +5,7 @@ import { canWrite, getNovelByOwnerSlug } from "@/lib/queries";
 import { listCharacters, listEncounters, listPlotLines } from "@/lib/character-queries";
 import { createEncounterAction, createPlotLineAction } from "@/lib/actions/characters";
 import { EncounterTimeline, UNASSIGNED } from "@/components/encounter-timeline";
+import { EncounterSubmitButton } from "@/components/encounter-submit-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -141,9 +142,7 @@ export default async function EncountersPage({
                   <Label htmlFor="description">설명</Label>
                   <Textarea id="description" name="description" rows={4} maxLength={2000} />
                 </div>
-                <Button type="submit" size="sm" className="self-start">
-                  만남 추가
-                </Button>
+                <EncounterSubmitButton />
               </form>
             </details>
           ))}
