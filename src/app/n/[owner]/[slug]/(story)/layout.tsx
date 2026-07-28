@@ -25,8 +25,8 @@ export default async function NovelLayout({
   }
 
   const base = `/n/${owner}/${slug}`;
-  const tabs = [
-    { href: `${base}/read`, label: "읽기" },
+  const primaryTabs = [{ href: `${base}/read`, label: "읽기" }];
+  const moreTabs = [
     { href: base, label: "코드" },
     { href: `${base}/characters`, label: "인물" },
     { href: `${base}/encounters`, label: "만남" },
@@ -48,7 +48,7 @@ export default async function NovelLayout({
           <h1 className="mb-4 truncate text-2xl font-semibold tracking-tight">
             {found.novel.name}
           </h1>
-          <StoryTabs items={tabs} />
+          <StoryTabs primary={primaryTabs} more={moreTabs} />
         </div>
       </div>
       <main className="min-w-0 flex-1 px-4 py-8 lg:px-8">{children}</main>
