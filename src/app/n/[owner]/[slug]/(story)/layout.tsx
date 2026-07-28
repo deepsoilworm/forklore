@@ -37,9 +37,13 @@ export default async function NovelLayout({
   ];
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl gap-6 px-4 py-8">
-      <aside className="hidden w-56 shrink-0 flex-col gap-4 lg:flex">
-        <div className="flex flex-col gap-2">
+    <div className="flex min-h-full">
+      <aside className="hidden w-56 shrink-0 flex-col gap-6 border-r px-3 py-4 lg:flex">
+        <Link href="/" className="px-2 text-base font-semibold tracking-tight">
+          Forklore
+        </Link>
+
+        <div className="flex flex-col gap-2 px-1">
           <div className="flex items-center gap-2">
             <CoverThumbnail name={found.novel.name} size="small" />
             <div className="flex min-w-0 flex-col">
@@ -60,32 +64,35 @@ export default async function NovelLayout({
             <Badge variant="outline">{LANGUAGE_LABELS[found.novel.language]}</Badge>
           </div>
         </div>
+
         <StoryNav base={base} tabs={tabs} />
       </aside>
 
-      <div className="flex flex-1 flex-col gap-4 lg:hidden">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-lg font-semibold tracking-tight">
-            <Link href={`/u/${owner}`} className="text-muted-foreground">
-              {owner}
-            </Link>{" "}
-            / {found.novel.name}
-          </h1>
-        </div>
-        <nav className="flex gap-4 overflow-x-auto border-b pb-px text-sm">
-          {tabs.map((tab) => (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className="shrink-0 pb-2 text-muted-foreground hover:text-foreground"
-            >
-              {tab.label}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex flex-col gap-3 border-b px-4 py-3 lg:hidden">
+          <div className="flex items-center justify-between">
+            <Link href="/" className="text-base font-semibold tracking-tight">
+              Forklore
             </Link>
-          ))}
-        </nav>
-      </div>
+            <h1 className="truncate text-sm text-muted-foreground">
+              <Link href={`/u/${owner}`}>{owner}</Link> / {found.novel.name}
+            </h1>
+          </div>
+          <nav className="flex gap-4 overflow-x-auto text-sm">
+            {tabs.map((tab) => (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                className="shrink-0 text-muted-foreground hover:text-foreground"
+              >
+                {tab.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
 
-      <main className="min-w-0 flex-1">{children}</main>
+        <main className="min-w-0 flex-1 px-4 py-8 lg:px-8">{children}</main>
+      </div>
     </div>
   );
 }
